@@ -1,16 +1,73 @@
-# React + Vite
+# 🐠 AquaMap Africa
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**La plateforme gratuite pour les aquaculteurs africains**
 
-Currently, two official plugins are available:
+A modern React MVP for aquaculture registration and tracking across West Africa (Senegal, Côte d'Ivoire, Cameroon).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-blue)](https://josuekongolo.github.io/aquamap-africa)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🌊 Features
 
-## Expanding the ESLint configuration
+- **Landing Page** — Hero, features, stats, CTA
+- **Registration Form** — 3-step multi-step form with GPS capture
+- **Operator Dashboard** — KPIs, FCR gauge, production charts, FCR calculator
+- **Interactive Map** — 28 mock operators with filters (Leaflet.js)
+- **FAO Knowledge Base** — 11 technical resources in 6 categories
+- **Equipment Suppliers** — 9 supplier directory with categories
+- **Admin Dashboard** — Password protected (`aquaadmin2024`), charts, operator table, CSV export
+- **French/English toggle** — Full bilingual support
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🛠️ Tech Stack
+
+- Vite + React 19
+- Tailwind CSS v4
+- React Router v7 (hash routing)
+- Recharts (FCR gauge, bar charts, pie charts)
+- Leaflet.js + react-leaflet (map)
+- No backend — mock data only
+
+## 🎨 Design
+
+- Primary: `#0D6B8A` (ocean blue)
+- Secondary: `#00A878` (aqua green)  
+- Accent: `#F4A261` (warm orange CTAs)
+- Clean card-based SaaS dashboard look
+
+## 🚀 Deployment
+
+```bash
+# Install dependencies
+npm install
+
+# Development
+npm run dev
+
+# Build
+npm run build
+
+# Deploy to GitHub Pages
+npm run deploy
+```
+
+## 📋 Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Landing page |
+| `/#/register` | Operator registration (3-step) |
+| `/#/dashboard` | Operator dashboard |
+| `/#/map` | Interactive operator map |
+| `/#/knowledge` | FAO knowledge base |
+| `/#/suppliers` | Equipment suppliers |
+| `/#/admin` | Admin dashboard (password: `aquaadmin2024`) |
+
+## 🌍 Languages
+
+- Default: French 🇫🇷
+- Toggle to English 🇬🇧 via navbar button
+
+---
+
+*Développé avec ❤️ pour les aquaculteurs africains*
