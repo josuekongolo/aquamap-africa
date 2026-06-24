@@ -1,0 +1,12 @@
+{
+  "name": "AquaMap Africa",
+  "short_name": "AquaMap",
+  "description": "La plateforme gratuite pour les aquaculteurs africains",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0D6B8A",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

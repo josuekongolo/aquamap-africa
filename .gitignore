@@ -1,3 +1,8 @@
 node_modules/
+.next/
+out/
 .env
-dist/.gitkeep
+.env.local
+.env.*.local
+.vercel
+.env*.local

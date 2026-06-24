@@ -1,10 +1,18 @@
+'use client';
+
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import { Menu, X } from 'lucide-react';
 import { useLang } from '../context/LangContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const { t, toggle } = useLang();
-  const location = useLocation();
+  const { user, isAdmin, signOut } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const links = [
@@ -12,18 +20,25 @@ export default function Navbar() {
     { to: '/map', label: t.nav.map },
     { to: '/knowledge', label: t.nav.knowledge },
     { to: '/suppliers', label: t.nav.suppliers },
-    { to: '/dashboard', label: t.nav.dashboard },
-    { to: '/admin', label: t.nav.admin },
+    ...(user ? [{ to: '/dashboard', label: t.nav.dashboard }] : []),
+    ...(user ? [{ to: '/explore', label: t.nav.explore }] : []),
+    ...(isAdmin ? [{ to: '/admin', label: t.nav.admin }] : []),
   ];
+
+  async function handleSignOut() {
+    await signOut();
+    setOpen(false);
+    router.push('/');
+  }
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 font-bold text-xl" style={{ color: '#0D6B8A' }}>
-            <span className="text-2xl">🐠</span>
-            <span className="hidden sm:block">AquaMap Africa</span>
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl" style={{ color: '#0D6B8A' }}>
+            <Image src="/img/logo-mark.png" alt="AquaMap Africa" width={32} height={32} priority className="w-8 h-8 object-contain" />
+            <span className="hidden sm:block font-display">AquaMap Africa</span>
           </Link>
 
           {/* Desktop links */}
@@ -31,9 +46,9 @@ export default function Navbar() {
             {links.map(l => (
               <Link
                 key={l.to}
-                to={l.to}
+                href={l.to}
                 className={`text-sm font-medium transition-colors hover:text-teal-600 ${
-                  location.pathname === l.to ? 'text-teal-700 border-b-2 border-teal-600 pb-0.5' : 'text-gray-600'
+                  pathname === l.to ? 'text-teal-700 border-b-2 border-teal-600 pb-0.5' : 'text-gray-600'
                 }`}
               >
                 {l.label}
@@ -50,24 +65,40 @@ export default function Navbar() {
             >
               {t.nav.lang}
             </button>
-            <Link
-              to="/register"
-              className="hidden md:block text-white text-sm font-semibold px-4 py-2 rounded-lg transition hover:opacity-90"
-              style={{ backgroundColor: '#F4A261' }}
-            >
-              {t.nav.register}
-            </Link>
+
+            {user ? (
+              <div className="hidden md:flex items-center gap-3">
+                <Link
+                  href="/register"
+                  className="text-white text-sm font-semibold px-4 py-2 rounded-lg transition hover:opacity-90"
+                  style={{ backgroundColor: '#F4A261' }}
+                >
+                  + {t.register.title}
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm font-medium text-gray-500 hover:text-gray-800"
+                  title={user.email}
+                >
+                  {t.auth.signOut}
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden md:block text-white text-sm font-semibold px-4 py-2 rounded-lg transition hover:opacity-90"
+                style={{ backgroundColor: '#F4A261' }}
+              >
+                {t.auth.signIn}
+              </Link>
+            )}
+
             {/* Hamburger */}
             <button
               className="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100"
               onClick={() => setOpen(!open)}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {open
-                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                }
-              </svg>
+              {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
@@ -79,10 +110,10 @@ export default function Navbar() {
           {links.map(l => (
             <Link
               key={l.to}
-              to={l.to}
+              href={l.to}
               onClick={() => setOpen(false)}
               className={`block py-2 px-3 rounded-lg text-sm font-medium ${
-                location.pathname === l.to
+                pathname === l.to
                   ? 'bg-teal-50 text-teal-700'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
@@ -90,14 +121,33 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
-          <Link
-            to="/register"
-            onClick={() => setOpen(false)}
-            className="block w-full text-center text-white text-sm font-semibold px-4 py-2 rounded-lg"
-            style={{ backgroundColor: '#F4A261' }}
-          >
-            {t.nav.register}
-          </Link>
+          {user ? (
+            <>
+              <Link
+                to="/register"
+                onClick={() => setOpen(false)}
+                className="block w-full text-center text-white text-sm font-semibold px-4 py-2 rounded-lg"
+                style={{ backgroundColor: '#F4A261' }}
+              >
+                + {t.register.title}
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-center py-2 text-sm font-medium text-gray-500 hover:text-gray-800"
+              >
+                {t.auth.signOut}
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => setOpen(false)}
+              className="block w-full text-center text-white text-sm font-semibold px-4 py-2 rounded-lg"
+              style={{ backgroundColor: '#F4A261' }}
+            >
+              {t.auth.signIn}
+            </Link>
+          )}
         </div>
       )}
     </nav>
