@@ -35,6 +35,14 @@ body {
   border-radius: 0.75rem;
 }
 
+/* cmdk command palette (knowledge search) */
+[cmdk-item] { cursor: pointer; border-radius: 0.5rem; }
+[cmdk-item][data-selected='true'] { background: rgba(13, 107, 138, 0.08); }
+[cmdk-group-heading] {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: #94a3b8; padding: 8px 8px 4px; font-weight: 600;
+}
+
 /* Subtle film grain for atmospheric overlays */
 .noise {
   position: absolute;

@@ -12,6 +12,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
     "@tailwindcss/postcss": "^4.3.1",
+    "cmdk": "^1.1.1",
     "leaflet": "^1.9.4",
     "leaflet-geosearch": "^4.4.0",
     "leaflet.fullscreen": "^5.3.1",
