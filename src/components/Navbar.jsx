@@ -21,7 +21,6 @@ export default function Navbar() {
     { to: '/knowledge', label: t.nav.knowledge },
     { to: '/suppliers', label: t.nav.suppliers },
     ...(user ? [{ to: '/dashboard', label: t.nav.dashboard }] : []),
-    ...(user ? [{ to: '/explore', label: t.nav.explore }] : []),
     ...(isAdmin ? [{ to: '/admin', label: t.nav.admin }] : []),
   ];
 
