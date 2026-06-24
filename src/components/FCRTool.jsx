@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Calculator } from 'lucide-react';
 import { speciesBenchmarks, speciesList } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -24,7 +23,7 @@ export default function FCRTool({ defaultSpecies = 'Tilapia' }) {
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: '#0D6B8A' }}><Calculator className="w-5 h-5" /> {t.dashboard.fcrTool}</h3>
+      <h3 className="font-semibold mb-1 text-black">{t.dashboard.fcrTool}</h3>
       <p className="text-xs text-gray-400 mb-4">{t.dashboard.disclaimer}</p>
 
       {/* Species selector */}

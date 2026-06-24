@@ -88,7 +88,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold" style={{ color: 'var(--brand)' }}>{t.dashboard.welcome} {agent?.full_name || user?.email}</h1>
+          <h1 className="font-display text-3xl font-bold text-black">{t.dashboard.welcome} {agent?.full_name || user?.email}</h1>
           {agent?.organization && <p className="text-muted-foreground text-sm">{agent.organization}</p>}
         </div>
         <div className="flex items-center gap-2">

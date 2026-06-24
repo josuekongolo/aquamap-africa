@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Command } from 'cmdk';
-import { Store, BadgeCheck, Phone, Mail, Handshake, Search, MapPin } from 'lucide-react';
+import { BadgeCheck, Phone, Mail, Handshake, Search, MapPin } from 'lucide-react';
 import { suppliers, supplierCategories } from '../data/suppliers';
 import { SupplierIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -45,9 +45,7 @@ export default function Suppliers() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header + search trigger */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2" style={{ color: '#0D6B8A' }}>
-          <Store className="w-7 h-7" /> {t.suppliers.title}
-        </h1>
+        <h1 className="text-3xl font-bold mb-2 text-black">{t.suppliers.title}</h1>
         <p className="text-gray-500 mb-5">{t.suppliers.subtitle}</p>
         <button
           onClick={() => setPaletteOpen(true)}
@@ -92,7 +90,7 @@ export default function Suppliers() {
                   <SupplierIcon id={s.category} className="w-6 h-6 mt-0.5 text-[#0D6B8A] shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-[15px]" style={{ color: '#0D6B8A' }}>{s.name}</h3>
+                      <h3 className="font-semibold text-[15px] text-black">{s.name}</h3>
                       {badge && (
                         <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>
                           <BadgeCheck className="inline w-3 h-3 -mt-0.5" /> {badge[lang]}

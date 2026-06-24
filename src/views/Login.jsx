@@ -53,7 +53,7 @@ export default function Login() {
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
         <div className="text-center mb-6">
           <Image src="/img/logo-mark.png" alt="AquaMap Africa" width={56} height={56} className="w-14 h-14 mx-auto mb-2 object-contain" />
-          <h1 className="text-2xl font-bold" style={{ color: '#0D6B8A' }}>
+          <h1 className="text-2xl font-bold text-black">
             {isSignup ? t.auth.signupTitle : t.auth.loginTitle}
           </h1>
           {!isSignup && <p className="text-gray-500 text-sm mt-1">{t.auth.loginSub}</p>}

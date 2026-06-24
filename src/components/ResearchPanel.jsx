@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FlaskConical } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 
 // Live "related research" per knowledge category, via the cached /api/research
@@ -44,7 +43,7 @@ export default function ResearchPanel({ category = 'all' }) {
 
   return (
     <div className="mt-12 bg-white rounded-2xl shadow-md p-8">
-      <h3 className="font-bold text-lg mb-1 flex items-center gap-2" style={{ color: '#0D6B8A' }}><FlaskConical className="w-5 h-5" /> {title}</h3>
+      <h3 className="font-bold text-lg mb-1 text-black">{title}</h3>
       <p className="text-xs text-gray-400 mb-5">{sub}</p>
 
       {papers === null ? (

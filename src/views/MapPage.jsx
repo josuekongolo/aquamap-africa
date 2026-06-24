@@ -232,7 +232,7 @@ function FeatureDetail({ f, fr, liveProduction }) {
       <div className="p-5">
         <div className="flex items-center gap-2 mb-1">
           <SpeciesIcon name={SPECIES_KEY[o.species?.[0]] || 'Tilapia'} className="w-5 h-5 text-[#0D6B8A]" />
-          <h3 className="font-bold" style={{ color: '#0D6B8A' }}>{o.name}</h3>
+          <h3 className="font-bold text-black">{o.name}</h3>
         </div>
         <p className="text-sm text-gray-500 flex items-center gap-1.5 mb-4"><MapPin className="w-3.5 h-3.5" /> {o.region}{o.region && o.country ? ', ' : ''}{o.country}</p>
         <dl className="space-y-2 text-sm">
@@ -255,7 +255,7 @@ function FeatureDetail({ f, fr, liveProduction }) {
   const c = f.data;
   return (
     <div className="p-5">
-      <h3 className="font-bold text-lg mb-1" style={{ color: COUNTRY_COLOR[c.name] || '#0D6B8A' }}>{c.flag} {c.name}</h3>
+      <h3 className="font-bold text-lg mb-1 text-black">{c.flag} {c.name}</h3>
       <a href={c.authority.website} target="_blank" rel="noopener noreferrer"
         className="text-xs text-gray-500 hover:text-teal-600 flex items-center gap-1 mb-4">
         <Building2 className="w-3.5 h-3.5" /> {c.authority.name} <ExternalLink className="w-3 h-3" />

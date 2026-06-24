@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Command } from 'cmdk';
-import { BookOpen, Search, FileText, ExternalLink } from 'lucide-react';
+import { Search, FileText, ExternalLink } from 'lucide-react';
 import { knowledge, knowledgeCategories } from '../data/knowledge';
 import { KnowledgeIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -35,9 +35,7 @@ export default function Knowledge() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header + search trigger */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2" style={{ color: '#0D6B8A' }}>
-          <BookOpen className="w-7 h-7" /> {t.knowledge.title}
-        </h1>
+        <h1 className="text-3xl font-bold mb-2 text-black">{t.knowledge.title}</h1>
         <p className="text-gray-500 mb-5">{t.knowledge.subtitle}</p>
         <button
           onClick={() => setPaletteOpen(true)}
@@ -86,7 +84,7 @@ export default function Knowledge() {
                 <KnowledgeIcon id={k.category} className="w-6 h-6 mt-0.5 text-[#0D6B8A] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-semibold text-[15px] leading-snug group-hover:underline" style={{ color: '#0D6B8A' }}>{k.title}</h3>
+                    <h3 className="font-semibold text-[15px] leading-snug group-hover:underline text-black">{k.title}</h3>
                     <div className="flex gap-1 shrink-0 pt-0.5">
                       {k.lang.map(l => (
                         <span key={l} className="text-[10px] font-bold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{l}</span>

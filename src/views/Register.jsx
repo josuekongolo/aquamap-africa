@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Waves, Fish, Droplets, Recycle, Wheat, Shrimp, User, TrendingUp, CircleCheck, MapPin, RefreshCw } from 'lucide-react';
+import { Waves, Fish, Droplets, Recycle, Wheat, Shrimp, CircleCheck, MapPin, RefreshCw } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -147,9 +147,7 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-8" style={{ color: '#0D6B8A' }}>
-<Fish className="inline w-6 h-6 -mt-1" /> {t.register.title}
-        </h1>
+        <h1 className="text-2xl font-bold text-center mb-8 text-black">{t.register.title}</h1>
 
         {/* Progress bar */}
         <div className="mb-8">
@@ -172,8 +170,8 @@ export default function Register() {
           {/* Step 1 */}
           {step === 1 && (
             <div className="space-y-5">
-              <h2 className="font-bold text-lg mb-4" style={{ color: '#0D6B8A' }}>
-<User className="inline w-5 h-5 -mt-0.5" /> {t.register.step1}
+              <h2 className="font-bold text-lg mb-4 text-black">
+{t.register.step1}
               </h2>
               {[
                 { label: t.register.name, key: 'name', type: 'text', placeholder: 'Ex: Mamadou Diallo' },
@@ -277,8 +275,8 @@ export default function Register() {
           {/* Step 2 */}
           {step === 2 && (
             <div className="space-y-5">
-              <h2 className="font-bold text-lg mb-4" style={{ color: '#0D6B8A' }}>
-<Droplets className="inline w-5 h-5 -mt-0.5" /> {t.register.step2}
+              <h2 className="font-bold text-lg mb-4 text-black">
+{t.register.step2}
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -393,8 +391,8 @@ export default function Register() {
           {/* Step 3 */}
           {step === 3 && (
             <div className="space-y-5">
-              <h2 className="font-bold text-lg mb-4" style={{ color: '#0D6B8A' }}>
-<TrendingUp className="inline w-5 h-5 -mt-0.5" /> {t.register.step3}
+              <h2 className="font-bold text-lg mb-4 text-black">
+{t.register.step3}
               </h2>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.production}</label>

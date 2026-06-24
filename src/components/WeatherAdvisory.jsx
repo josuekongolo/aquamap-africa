@@ -71,7 +71,7 @@ export default function WeatherAdvisory({ lat, lng, speciesKey = 'Tilapia' }) {
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: '#0D6B8A' }}><CloudSun className="w-5 h-5" /> {T.title}</h3>
+      <h3 className="font-semibold mb-3 text-black">{T.title}</h3>
       <div className="flex items-center gap-6 mb-3">
         <div>
           <div className="text-3xl font-bold" style={{ color: '#0D6B8A' }}>{Math.round(cur)}°C</div>
