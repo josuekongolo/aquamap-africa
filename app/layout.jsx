@@ -1,7 +1,11 @@
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
-import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
+import { Fraunces, Hanken_Grotesk, JetBrains_Mono, Geist } from 'next/font/google';
 import Providers from './providers';
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
 
 // Editorial display serif + clean grotesque body + mono for data labels.
 const display = Fraunces({ subsets: ['latin'], variable: '--font-display', display: 'swap', axes: ['opsz'] });
@@ -21,7 +25,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="fr" className={cn(display.variable, body.variable, mono.variable, "font-sans", geist.variable)}>
       <body>
         <Providers>{children}</Providers>
       </body>

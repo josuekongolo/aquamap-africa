@@ -67,7 +67,7 @@ export default function Home() {
             </p>
             <div className="rise flex flex-col sm:flex-row gap-3 mb-10" style={{ animationDelay: '240ms' }}>
               <Link href="/login" className="text-center font-semibold px-7 py-4 rounded-full text-[#06303d] hover:opacity-90 transition"
-                style={{ backgroundColor: 'var(--accent)' }}>
+                style={{ backgroundColor: 'var(--brand-accent)' }}>
                 {fr ? 'Espace agent' : 'Agent login'} →
               </Link>
               <Link href="/map" className="text-center font-semibold px-7 py-4 rounded-full border border-white/25 text-white hover:bg-white/10 transition">
@@ -78,7 +78,7 @@ export default function Home() {
             <div className="rise flex flex-wrap gap-x-7 gap-y-3" style={{ animationDelay: '320ms' }}>
               {stat.map((s, i) => (
                 <div key={i} className="flex items-baseline gap-2">
-                  <span className="font-display text-2xl font-bold" style={{ color: 'var(--accent)' }}>{s.n}</span>
+                  <span className="font-display text-2xl font-bold" style={{ color: 'var(--brand-accent)' }}>{s.n}</span>
                   <span className="font-mono2 text-[11px] uppercase tracking-wider text-white/55">{s.l}</span>
                 </div>
               ))}
@@ -127,7 +127,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className={i % 2 ? 'md:order-1' : ''}>
-                  <p className="font-mono2 text-[11px] uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--secondary)' }}>
+                  <p className="font-mono2 text-[11px] uppercase tracking-[0.2em] mb-3" style={{ color: 'var(--brand-2)' }}>
                     {f.k} · {f.tag}
                   </p>
                   <h3 className="font-display text-3xl md:text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--ink)' }}>
@@ -179,8 +179,8 @@ export default function Home() {
           </h2>
           <div className="grid md:grid-cols-3 gap-10 md:gap-8">
             {steps.map((s) => (
-              <div key={s.n} className="border-t-2 pt-5" style={{ borderColor: 'var(--secondary)' }}>
-                <span className="font-mono2 text-sm" style={{ color: 'var(--secondary)' }}>{s.n}</span>
+              <div key={s.n} className="border-t-2 pt-5" style={{ borderColor: 'var(--brand-2)' }}>
+                <span className="font-mono2 text-sm" style={{ color: 'var(--brand-2)' }}>{s.n}</span>
                 <h3 className="font-display text-2xl font-bold mt-2 mb-2" style={{ color: 'var(--ink)' }}>{s.label}</h3>
                 <p className="text-gray-600">{s.desc}</p>
               </div>
@@ -204,7 +204,7 @@ export default function Home() {
               : 'Free for NGOs and extension agents. Sourced, secure, exportable data.'}
           </p>
           <Link href="/login" className="inline-block font-semibold px-9 py-4 rounded-full text-[#06303d] hover:opacity-90 transition"
-            style={{ backgroundColor: 'var(--accent)' }}>
+            style={{ backgroundColor: 'var(--brand-accent)' }}>
             {fr ? 'Commencer — Espace agent' : 'Get started — Agent login'} →
           </Link>
         </div>

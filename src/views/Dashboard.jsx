@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Waves, BarChart3, Wheat, PackageCheck, Fish, Scale, AlertTriangle } from 'lucide-react';
+import { Wheat, PackageCheck, Fish, AlertTriangle, Plus } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { rateFCR } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -12,29 +13,29 @@ import FCRTool from '../components/FCRTool';
 import LogModal from '../components/LogModal';
 import WeatherAdvisory from '../components/WeatherAdvisory';
 import FCRInsight from '../components/FCRInsight';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
-// Operator species are stored as form ids; map to species.js benchmark keys.
 const SPECIES_KEY = { tilapia: 'Tilapia', silure: 'Silure', crevette: 'Crevette', carpe: 'Carpe' };
 const STATUS_LABEL = { excellent: 'fcrExcellent', correct: 'fcrCorrect', high: 'fcrHigh' };
 
 function primarySpeciesKey(operator) {
-  const id = operator?.species?.[0];
-  return SPECIES_KEY[id] || 'Tilapia';
+  return SPECIES_KEY[operator?.species?.[0]] || 'Tilapia';
 }
 
-// Approximate FCR from an operator's logs: feed ÷ (harvested − stocked biomass).
 function computeMetrics(logs) {
   let feed = 0, harvested = 0, stocked = 0;
   for (const l of logs) {
     if (l.type === 'feed') feed += Number(l.feed_kg) || 0;
     else if (l.type === 'harvest') harvested += Number(l.kg_harvested) || 0;
-    else if (l.type === 'stocking') {
-      stocked += ((Number(l.fingerlings_count) || 0) * (Number(l.avg_weight_g) || 0)) / 1000;
-    }
+    else if (l.type === 'stocking') stocked += ((Number(l.fingerlings_count) || 0) * (Number(l.avg_weight_g) || 0)) / 1000;
   }
   const gain = harvested - stocked;
-  const fcr = feed > 0 && gain > 0 ? feed / gain : null;
-  return { feed, harvested, stocked, gain, fcr };
+  return { feed, harvested, stocked, gain, fcr: feed > 0 && gain > 0 ? feed / gain : null };
 }
 
 export default function Dashboard() {
@@ -52,29 +53,18 @@ export default function Dashboard() {
 
   const loadOperators = useCallback(async () => {
     if (!configured) return;
-    const { data, error } = await supabase
-      .from('operators')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('operators').select('*').order('created_at', { ascending: false });
     if (error) setError(error.message);
-    else {
-      setOperators(data || []);
-      setSelectedId(prev => prev || data?.[0]?.id || null);
-    }
+    else { setOperators(data || []); setSelectedId(prev => prev || data?.[0]?.id || null); }
     setLoading(false);
   }, [configured]);
 
   const loadLogs = useCallback(async (operatorId) => {
     if (!configured || !operatorId) return;
-    const { data } = await supabase
-      .from('logs')
-      .select('*')
-      .eq('operator_id', operatorId)
-      .order('log_date', { ascending: false });
+    const { data } = await supabase.from('logs').select('*').eq('operator_id', operatorId).order('log_date', { ascending: false });
     setLogs(data || []);
   }, [configured]);
 
-  // Fetch-on-mount / on-select: legitimate effect use; state updates land after await.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadOperators(); }, [loadOperators]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -83,179 +73,184 @@ export default function Dashboard() {
   const metrics = computeMetrics(logs);
   const speciesKey = primarySpeciesKey(selected);
   const rating = metrics.fcr != null ? rateFCR(speciesKey, metrics.fcr) : null;
-
   const agentName = agent?.full_name || user?.email || '';
 
+  const chartData = [...logs]
+    .sort((a, b) => String(a.log_date).localeCompare(String(b.log_date)))
+    .map(l => ({
+      date: l.log_date,
+      feed: l.type === 'feed' ? Number(l.feed_kg) || 0 : 0,
+      harvest: l.type === 'harvest' ? Number(l.kg_harvested) || 0 : 0,
+    }));
+  const chartConfig = {
+    feed: { label: lang === 'fr' ? 'Aliments (kg)' : 'Feed (kg)', color: 'var(--brand)' },
+    harvest: { label: lang === 'fr' ? 'Récolte (kg)' : 'Harvest (kg)', color: 'var(--brand-2)' },
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
       {modalOpen && selected && (
-        <LogModal
-          operator={selected}
-          onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); loadLogs(selectedId); }}
-        />
+        <LogModal operator={selected} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(selectedId); }} />
       )}
 
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: '#0D6B8A' }}><Waves className="w-6 h-6" /> {t.dashboard.welcome} {agentName}</h1>
-          {agent?.organization && <p className="text-gray-500 text-sm mt-1">{agent.organization}</p>}
+          <h1 className="font-display text-3xl font-bold" style={{ color: 'var(--brand)' }}>{t.dashboard.welcome} {agentName}</h1>
+          {agent?.organization && <p className="text-muted-foreground text-sm">{agent.organization}</p>}
         </div>
-        <Link
-          href="/register"
-          className="text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90"
-          style={{ backgroundColor: '#F4A261' }}
-        >
-          {t.dashboard.registerFirst}
-        </Link>
+        <div className="flex items-center gap-3">
+          {operators.length > 0 && (
+            <Select value={selectedId || ''} onValueChange={setSelectedId}>
+              <SelectTrigger className="w-[240px]"><SelectValue placeholder={t.dashboard.myOperators} /></SelectTrigger>
+              <SelectContent>
+                {operators.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Link href="/register" className="text-white px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90" style={{ backgroundColor: 'var(--brand-accent)' }}>
+            {t.dashboard.registerFirst}
+          </Link>
+        </div>
       </div>
 
       {!configured && (
-        <div className="mb-6 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-3">
-<AlertTriangle className="inline w-4 h-4 -mt-0.5" /> {t.auth.notConfigured}
+        <div className="text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-3">
+          <AlertTriangle className="inline w-4 h-4 -mt-0.5" /> {t.auth.notConfigured}
         </div>
       )}
-      {error && (
-        <div className="mb-6 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>
+      {error && <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
+
+      {configured && !loading && operators.length === 0 && (
+        <Card><CardContent className="py-10 text-center text-muted-foreground">
+          {t.dashboard.noOperators}
+          <Link href="/register" className="block mt-3 font-medium" style={{ color: 'var(--brand)' }}>{t.dashboard.registerFirst}</Link>
+        </CardContent></Card>
       )}
 
-      {/* Operators + detail */}
-      {configured && (
-        <div className="grid lg:grid-cols-[280px_1fr] gap-6 mb-8">
-          {/* Operator list */}
-          <div className="bg-white rounded-xl shadow-md p-4 h-fit">
-            <h3 className="font-semibold mb-3 text-sm uppercase tracking-wide text-gray-500">
-              {t.dashboard.myOperators} {operators.length > 0 && `(${operators.length})`}
-            </h3>
-            {loading ? (
-              <div className="text-gray-400 text-sm py-6 text-center animate-pulse">…</div>
-            ) : operators.length === 0 ? (
-              <div className="text-gray-400 text-sm py-4">
-                {t.dashboard.noOperators}
-                <Link href="/register" className="block mt-3 font-medium" style={{ color: '#0D6B8A' }}>
-                  {t.dashboard.registerFirst}
-                </Link>
-              </div>
-            ) : (
-              <ul className="space-y-1">
-                {operators.map(o => (
-                  <li key={o.id}>
-                    <button
-                      onClick={() => setSelectedId(o.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                        o.id === selectedId ? 'bg-teal-50 text-teal-700 font-medium' : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <SpeciesIcon name={primarySpeciesKey(o)} className="w-4 h-4 shrink-0 text-[#0D6B8A]" />
-                        <span className="truncate">{o.name}</span>
-                      </div>
-                      <div className="text-xs text-gray-400 truncate">{o.region}{o.region && o.country ? ', ' : ''}{o.country}</div>
-                    </button>
-                  </li>
+      {selected && (
+        <>
+          {/* Section cards (shadcn dashboard-01 style) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Kpi label={t.dashboard.fcr} value={metrics.fcr != null ? metrics.fcr.toFixed(2) : '—'}
+              action={rating && <Badge variant="outline" style={{ color: rating.color, borderColor: rating.color }}>{t.dashboard[STATUS_LABEL[rating.status]]}</Badge>}
+              footer={`${speciesKey} · ${lang === 'fr' ? 'réf. FAO/SRAC' : 'FAO/SRAC ref.'}`} />
+            <Kpi label={t.dashboard.feedKg} value={`${Math.round(metrics.feed)} kg`} icon={<Wheat className="w-4 h-4" />} footer={lang === 'fr' ? 'Total saisi' : 'Total logged'} />
+            <Kpi label={t.dashboard.harvest} value={`${Math.round(metrics.harvested)} kg`} icon={<PackageCheck className="w-4 h-4" />} footer={lang === 'fr' ? 'Biomasse récoltée' : 'Harvested biomass'} />
+            <Kpi label={t.dashboard.species} value={speciesKey} icon={<SpeciesIcon name={speciesKey} className="w-4 h-4" />}
+              footer={`${selected.region || ''}${selected.region && selected.country ? ', ' : ''}${selected.country || ''}`} />
+          </div>
+
+          {/* Interactive chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{lang === 'fr' ? 'Aliments & récoltes' : 'Feed & harvests'}</CardTitle>
+              <CardDescription>{lang === 'fr' ? "Saisies de production dans le temps" : 'Production logs over time'}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartData.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-8 text-center">{t.dashboard.noLogs}</p>
+              ) : (
+                <ChartContainer config={chartConfig} className="h-[240px] w-full">
+                  <AreaChart data={chartData} margin={{ left: 12, right: 12 }}>
+                    <defs>
+                      <linearGradient id="fillFeed" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-feed)" stopOpacity={0.6} /><stop offset="95%" stopColor="var(--color-feed)" stopOpacity={0.05} /></linearGradient>
+                      <linearGradient id="fillHarvest" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--color-harvest)" stopOpacity={0.6} /><stop offset="95%" stopColor="var(--color-harvest)" stopOpacity={0.05} /></linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} minTickGap={24} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                    <Area dataKey="feed" type="natural" fill="url(#fillFeed)" stroke="var(--color-feed)" />
+                    <Area dataKey="harvest" type="natural" fill="url(#fillHarvest)" stroke="var(--color-harvest)" />
+                  </AreaChart>
+                </ChartContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* FCR insight + weather */}
+          <div className="grid lg:grid-cols-2 gap-4">
+            {metrics.fcr != null && (
+              <Card><CardHeader><CardTitle>{t.dashboard.fcrGauge}</CardTitle></CardHeader>
+                <CardContent><FCRInsight speciesKey={speciesKey} fcr={metrics.fcr} /></CardContent></Card>
+            )}
+            <WeatherAdvisory lat={selected.lat} lng={selected.lng} speciesKey={speciesKey} />
+          </div>
+
+          {/* Logs data table */}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle>{selected.name}</CardTitle>
+              <CardAction>
+                <button onClick={() => setModalOpen(true)} className="text-white px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand-2)' }}>
+                  <Plus className="w-4 h-4" /> {t.dashboard.addLog.replace('+ ', '')}
+                </button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="all">
+                <TabsList>
+                  <TabsTrigger value="all">{t.map.all}</TabsTrigger>
+                  <TabsTrigger value="stocking">{t.dashboard.stocking}</TabsTrigger>
+                  <TabsTrigger value="feed">{t.dashboard.feeding}</TabsTrigger>
+                  <TabsTrigger value="harvest">{t.dashboard.harvest}</TabsTrigger>
+                </TabsList>
+                {['all', 'stocking', 'feed', 'harvest'].map(tab => (
+                  <TabsContent key={tab} value={tab}>
+                    <LogsTable logs={tab === 'all' ? logs : logs.filter(l => l.type === tab)} t={t} emptyLabel={t.dashboard.noLogs} />
+                  </TabsContent>
                 ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Selected operator detail */}
-          <div>
-            {!selected ? (
-              <div className="bg-white rounded-xl shadow-md p-10 text-center text-gray-400">
-                {t.dashboard.selectOperator}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* KPIs */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Kpi Icon={BarChart3} label={t.dashboard.fcr}
-                    value={metrics.fcr != null ? metrics.fcr.toFixed(2) : '—'}
-                    color={rating?.color || '#94a3b8'}
-                    sub={rating ? t.dashboard[STATUS_LABEL[rating.status]] : null} />
-                  <Kpi Icon={Wheat} label={t.dashboard.feedKg} value={`${Math.round(metrics.feed)} kg`} color="#0D6B8A" />
-                  <Kpi Icon={PackageCheck} label={t.dashboard.harvest} value={`${Math.round(metrics.harvested)} kg`} color="#00A878" />
-                  <Kpi Icon={Fish} label={t.dashboard.species} value={speciesKey} color="#8b5cf6" />
-                </div>
-
-                {/* Actionable FCR insight */}
-                {metrics.fcr != null && (
-                  <div className="bg-white rounded-xl shadow-md p-6">
-                    <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: '#0D6B8A' }}><Scale className="w-5 h-5" /> {t.dashboard.fcrGauge}</h3>
-                    <FCRInsight speciesKey={speciesKey} fcr={metrics.fcr} />
-                  </div>
-                )}
-
-                {/* Weather advisory (if operator has GPS) */}
-                <WeatherAdvisory lat={selected.lat} lng={selected.lng} speciesKey={speciesKey} />
-
-                {/* Add log + logs list */}
-                <div className="bg-white rounded-xl shadow-md p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold" style={{ color: '#0D6B8A' }}>{selected.name}</h3>
-                    <button
-                      onClick={() => setModalOpen(true)}
-                      className="text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90"
-                      style={{ backgroundColor: '#00A878' }}
-                    >
-                      {t.dashboard.addLog}
-                    </button>
-                  </div>
-
-                  {logs.length === 0 ? (
-                    <p className="text-gray-400 text-sm py-4">{t.dashboard.noLogs}</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-left text-gray-400 border-b">
-                            <th className="py-2 pr-4 font-medium">{t.dashboard.date}</th>
-                            <th className="py-2 pr-4 font-medium">{t.dashboard.logType}</th>
-                            <th className="py-2 pr-4 font-medium">{t.dashboard.species}</th>
-                            <th className="py-2 font-medium text-right">kg / qty</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {logs.map(l => (
-                            <tr key={l.id} className="border-b border-gray-50">
-                              <td className="py-2 pr-4 text-gray-600">{l.log_date}</td>
-                              <td className="py-2 pr-4">
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                                  {l.type === 'feed' ? t.dashboard.feeding : l.type === 'harvest' ? t.dashboard.harvest : t.dashboard.stocking}
-                                </span>
-                              </td>
-                              <td className="py-2 pr-4 text-gray-600">{l.species || '—'}</td>
-                              <td className="py-2 text-right text-gray-700 font-medium">
-                                {l.type === 'feed' && `${l.feed_kg} kg`}
-                                {l.type === 'harvest' && `${l.kg_harvested} kg`}
-                                {l.type === 'stocking' && `${l.fingerlings_count ?? '—'} × ${l.avg_weight_g ?? '—'} g`}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </>
       )}
 
-      {/* Species-aware FCR tool — always available */}
       <FCRTool defaultSpecies={selected ? speciesKey : 'Tilapia'} key={lang} />
     </div>
   );
 }
 
-function Kpi({ Icon, label, value, color, sub }) {
+function Kpi({ label, value, action, icon, footer }) {
   return (
-    <div className="bg-white rounded-xl shadow-md p-5">
-      <Icon className="w-7 h-7 mb-2" style={{ color }} />
-      <div className="text-2xl font-bold mb-0.5" style={{ color }}>{value}</div>
-      <div className="text-sm text-gray-500">{label}</div>
-      {sub && <div className="text-xs font-semibold mt-1" style={{ color }}>{sub}</div>}
-    </div>
+    <Card className="gap-2">
+      <CardHeader>
+        <CardDescription className="flex items-center gap-1.5">{icon}{label}</CardDescription>
+        <CardTitle className="text-2xl font-bold tabular-nums">{value}</CardTitle>
+        {action && <CardAction>{action}</CardAction>}
+      </CardHeader>
+      {footer && <CardFooter className="text-xs text-muted-foreground">{footer}</CardFooter>}
+    </Card>
+  );
+}
+
+function LogsTable({ logs, t, emptyLabel }) {
+  const typeLabel = { feed: t.dashboard.feeding, harvest: t.dashboard.harvest, stocking: t.dashboard.stocking };
+  if (!logs.length) return <p className="text-muted-foreground text-sm py-6 text-center">{emptyLabel}</p>;
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t.dashboard.date}</TableHead>
+          <TableHead>{t.dashboard.logType}</TableHead>
+          <TableHead>{t.dashboard.species}</TableHead>
+          <TableHead className="text-right">kg / qty</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {logs.map(l => (
+          <TableRow key={l.id}>
+            <TableCell className="text-muted-foreground">{l.log_date}</TableCell>
+            <TableCell><Badge variant="secondary">{typeLabel[l.type]}</Badge></TableCell>
+            <TableCell>{l.species || '—'}</TableCell>
+            <TableCell className="text-right font-medium tabular-nums">
+              {l.type === 'feed' && `${l.feed_kg} kg`}
+              {l.type === 'harvest' && `${l.kg_harvested} kg`}
+              {l.type === 'stocking' && `${l.fingerlings_count ?? '—'} × ${l.avg_weight_g ?? '—'} g`}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
