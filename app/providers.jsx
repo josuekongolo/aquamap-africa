@@ -7,20 +7,22 @@ import Footer from '@/src/components/Footer';
 import BottomNav from '@/src/components/BottomNav';
 import OfflineBanner from '@/src/components/OfflineBanner';
 import ServiceWorkerRegister from '@/src/components/ServiceWorkerRegister';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function Providers({ children }) {
   return (
     <LangProvider>
       <AuthProvider>
-        <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8FAFC' }}>
-          <Navbar />
-          <OfflineBanner />
-          {/* pb on mobile so content clears the fixed bottom nav */}
-          <main className="flex-1 pb-16 md:pb-0">{children}</main>
-          <Footer />
-          <BottomNav />
+        <TooltipProvider delayDuration={0}>
+          <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8FAFC' }}>
+            <Navbar />
+            <OfflineBanner />
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <Footer />
+            <BottomNav />
+          </div>
           <ServiceWorkerRegister />
-        </div>
+        </TooltipProvider>
       </AuthProvider>
     </LangProvider>
   );
