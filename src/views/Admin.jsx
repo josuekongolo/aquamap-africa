@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { ShieldCheck, AlertTriangle, FileText, BarChart3, Fish, Map as MapIcon, Users, Landmark, Download } from 'lucide-react';
+import { AlertTriangle, FileText, Download } from 'lucide-react';
 import { countries as institutions, dataSources } from '../data/institutions';
 import { useLang } from '../context/LangContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -127,7 +127,7 @@ export default function Admin() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold flex items-center gap-2" style={{ color: 'var(--brand)' }}><ShieldCheck className="w-7 h-7" /> {t.admin.title}</h1>
+          <h1 className="font-display text-3xl font-bold text-black">{t.admin.title}</h1>
           <p className="text-muted-foreground text-sm">{lang === 'fr' ? "Vue d'ensemble du secteur — opérateurs enregistrés" : 'Sector overview — registered operators'}</p>
         </div>
         <Button onClick={exportCSV} disabled={filtered.length === 0} className="text-white" style={{ backgroundColor: 'var(--brand-2)' }}>
@@ -161,7 +161,7 @@ export default function Admin() {
         {institutions.map(c => (
           <Card key={c.name}>
             <CardHeader>
-              <CardTitle className="text-lg">{c.flag} {c.name}</CardTitle>
+              <CardTitle className="text-lg text-black">{c.flag} {c.name}</CardTitle>
               <CardDescription><a href={c.authority.website} target="_blank" rel="noopener noreferrer" className="hover:text-teal-600">{c.authority.name}</a></CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
@@ -177,7 +177,7 @@ export default function Admin() {
       {/* Charts row */}
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" style={{ color: 'var(--brand)' }} /> {t.admin.fcrDist}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-black">{t.admin.fcrDist}</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={fcrConfig} className="h-[220px] w-full">
               <BarChart data={buckets}>
@@ -192,7 +192,7 @@ export default function Admin() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5" style={{ color: 'var(--brand)' }} /> {t.admin.challenges}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-black">{t.admin.challenges}</CardTitle></CardHeader>
           <CardContent>
             {challengeDist.length === 0 ? <Empty loading={loading} lang={lang} /> : (
               <ChartContainer config={challengeConfig} className="h-[220px] w-full">
@@ -212,7 +212,7 @@ export default function Admin() {
       {/* Species pie + map */}
       <div className="grid lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Fish className="w-5 h-5" style={{ color: 'var(--brand)' }} /> {lang === 'fr' ? 'Répartition par espèce' : 'Species breakdown'}</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-black">{lang === 'fr' ? 'Répartition par espèce' : 'Species breakdown'}</CardTitle></CardHeader>
           <CardContent>
             {speciesDist.length === 0 ? <Empty loading={loading} lang={lang} /> : (
               <ChartContainer config={pieConfig} className="h-[220px] w-full">
@@ -228,7 +228,7 @@ export default function Admin() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><MapIcon className="w-5 h-5" style={{ color: 'var(--brand)' }} /> {lang === 'fr' ? 'Carte des opérateurs' : 'Operator map'} ({mapMarkers.length})</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-black">{lang === 'fr' ? 'Carte des opérateurs' : 'Operator map'} ({mapMarkers.length})</CardTitle></CardHeader>
           <CardContent><div style={{ height: '220px' }}><OperatorMap markers={mapMarkers} /></div></CardContent>
         </Card>
       </div>
@@ -236,7 +236,7 @@ export default function Admin() {
       {/* Operators table */}
       <Card>
         <CardHeader className="flex-row items-center justify-between flex-wrap gap-3">
-          <CardTitle className="flex items-center gap-2"><Users className="w-5 h-5" style={{ color: 'var(--brand)' }} /> {t.admin.operators} ({filtered.length})</CardTitle>
+          <CardTitle className="text-black">{t.admin.operators} ({filtered.length})</CardTitle>
           <CardAction className="flex gap-2 self-center">
             <Select value={filterCountry} onValueChange={setFilterCountry}>
               <SelectTrigger size="sm" className="w-[150px]"><SelectValue /></SelectTrigger>
@@ -261,7 +261,7 @@ export default function Admin() {
 
       {/* Institutional data sources */}
       <Card style={{ backgroundColor: '#eff6ff' }} className="border-blue-100">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Landmark className="w-5 h-5" style={{ color: 'var(--brand)' }} /> {lang === 'fr' ? 'Sources de données institutionnelles' : 'Institutional data sources'}</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-black">{lang === 'fr' ? 'Sources de données institutionnelles' : 'Institutional data sources'}</CardTitle></CardHeader>
         <CardContent className="grid sm:grid-cols-2 gap-3">
           {dataSources.map(s => (
             <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className="block bg-white rounded-lg px-4 py-3 hover:shadow-sm transition">
