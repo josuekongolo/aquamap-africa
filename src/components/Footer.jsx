@@ -1,21 +1,82 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useLang } from '../context/LangContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Footer() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const { user } = useAuth();
+  const fr = lang === 'fr';
+  const year = new Date().getFullYear();
+
+  const platform = [
+    { label: t.nav.home, href: '/' },
+    { label: t.nav.map, href: '/map' },
+    user ? { label: t.nav.dashboard, href: '/dashboard' } : { label: fr ? 'Espace agent' : 'Agent login', href: '/login' },
+  ];
+  const resources = [
+    { label: t.nav.knowledge, href: '/knowledge' },
+    { label: t.nav.suppliers, href: '/suppliers' },
+  ];
+  const sources = [
+    { label: 'FAO FishStat', href: 'https://www.fao.org/fishery/en/fishstat' },
+    { label: 'FAO FISH4ACP', href: 'https://www.fao.org/in-action/fish-4-acp/' },
+    { label: 'AfDB — TAAT', href: 'https://taat-africa.org/aquaculture/' },
+    { label: 'World Bank PROBLUE', href: 'https://www.worldbank.org/en/programs/problue' },
+  ];
+
   return (
-    <footer className="mt-16 py-8 text-center text-sm text-gray-500 border-t bg-white">
-      <p>{t.footer}</p>
-      <div className="mt-2 flex justify-center items-center gap-4 text-xs text-gray-400">
-        <span className="flex items-center gap-1.5">
-          <Image src="/img/logo-mark.png" alt="" width={16} height={16} className="w-4 h-4 object-contain" />
-          AquaMap Africa
-        </span>
-        <span>•</span>
-        <span>🇸🇳 Sénégal · 🇨🇮 Côte d&apos;Ivoire · 🇨🇲 Cameroun</span>
+    <footer className="border-t bg-white">
+      <div className="max-w-7xl mx-auto px-6 py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
+        {/* Brand */}
+        <div className="lg:col-span-2">
+          <Link href="/" className="flex items-center gap-2 mb-3">
+            <Image src="/img/logo-mark.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
+            <span className="font-display font-bold text-lg" style={{ color: 'var(--brand)' }}>AquaMap Africa</span>
+          </Link>
+          <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+            {fr
+              ? "La plateforme de données aquacoles pour l'Afrique francophone — enregistrement des opérateurs, suivi de production et intelligence sectorielle."
+              : 'The aquaculture data platform for francophone Africa — operator registration, production tracking and sector intelligence.'}
+          </p>
+          <div className="flex items-center gap-3 mt-4 text-sm text-gray-500">
+            <span>🇸🇳 Sénégal</span><span>🇨🇮 Côte d&apos;Ivoire</span><span>🇨🇲 Cameroun</span>
+          </div>
+        </div>
+
+        <FooterCol title={fr ? 'Plateforme' : 'Platform'} links={platform} />
+        <FooterCol title={fr ? 'Ressources' : 'Resources'} links={resources} />
+        <FooterCol title={fr ? 'Sources' : 'Data sources'} links={sources} external />
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
+          <span>© {year} AquaMap Africa. {fr ? 'Tous droits réservés.' : 'All rights reserved.'}</span>
+          <span>{fr ? 'Données sourcées — FAO · WorldFish · CEDEAO · Banque mondiale' : 'Sourced data — FAO · WorldFish · ECOWAS · World Bank'}</span>
+        </div>
       </div>
     </footer>
+  );
+}
+
+function FooterCol({ title, links, external }) {
+  return (
+    <div>
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">{title}</h4>
+      <ul className="space-y-2.5">
+        {links.map(l => (
+          <li key={l.label}>
+            {external ? (
+              <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-gray-600 hover:text-teal-700 transition">{l.label}</a>
+            ) : (
+              <Link href={l.href} className="text-sm text-gray-600 hover:text-teal-700 transition">{l.label}</Link>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
