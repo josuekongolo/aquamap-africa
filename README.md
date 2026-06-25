@@ -1,4 +1,4 @@
-# 🐠 AquaMap Africa
+# 🐠 AQAFRIKA
 
 **La plateforme gratuite pour les aquaculteurs africains**
 

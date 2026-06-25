@@ -94,7 +94,7 @@ export default function Admin() {
     const blob = new Blob([toCSV(filtered)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `aquamap-operators-${filtered.length}.csv`; a.click();
+    a.href = url; a.download = `aqafrika-operators-${filtered.length}.csv`; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -130,7 +130,7 @@ export default function Admin() {
           <h1 className="font-display text-3xl font-bold text-black">{t.admin.title}</h1>
           <p className="text-muted-foreground text-sm">{lang === 'fr' ? "Vue d'ensemble du secteur — opérateurs enregistrés" : 'Sector overview — registered operators'}</p>
         </div>
-        <Button onClick={exportCSV} disabled={filtered.length === 0} className="text-white" style={{ backgroundColor: 'var(--brand-2)' }}>
+        <Button onClick={exportCSV} disabled={filtered.length === 0} className="text-white" style={{ backgroundColor: 'var(--brand)' }}>
           <Download className="size-4" /> {t.admin.export}
         </Button>
       </div>
@@ -165,7 +165,7 @@ export default function Admin() {
               <CardDescription><a href={c.authority.website} target="_blank" rel="noopener noreferrer" className="hover:text-teal-600">{c.authority.name}</a></CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">{lang === 'fr' ? 'Enregistrés (AquaMap)' : 'Registered (AquaMap)'}</span><span className="font-bold" style={{ color: 'var(--brand-2)' }}>{byCountry[c.name] || 0}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{lang === 'fr' ? 'Enregistrés (AQAFRIKA)' : 'Registered (AQAFRIKA)'}</span><span className="font-bold" style={{ color: 'var(--brand-2)' }}>{byCountry[c.name] || 0}</span></div>
               {c.production.map((p, i) => (
                 <div key={i} className="flex justify-between"><span className="text-muted-foreground text-xs">{p.source} · {p.year}</span><span className="font-semibold">{p.value}</span></div>
               ))}

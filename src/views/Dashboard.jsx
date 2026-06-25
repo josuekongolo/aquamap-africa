@@ -2,16 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download } from 'lucide-react';
 import { rateFCR } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useRealtimeTable } from '../lib/useRealtimeTable';
+import { toast } from 'sonner';
 import FCRTool from '../components/FCRTool';
 import LogModal from '../components/LogModal';
+import EventModal from '../components/EventModal';
 import WeatherAdvisory from '../components/WeatherAdvisory';
 import FCRInsight from '../components/FCRInsight';
+import ActivityFeed from '../components/dashboard/ActivityFeed';
 import { LogsDataTable } from '../components/dashboard/LogsDataTable';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,9 +48,23 @@ export default function Dashboard() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(configured);
   const [modalOpen, setModalOpen] = useState(false);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [feedKey, setFeedKey] = useState(0);
   const [error, setError] = useState('');
 
   const selected = operators.find(o => o.id === selectedId) || null;
+
+  const exportCsv = useCallback(() => {
+    if (!selected) return;
+    const cols = ['log_date', 'type', 'species', 'feed_kg', 'fingerlings_count', 'avg_weight_g', 'kg_harvested', 'kg_sold', 'price_per_kg', 'note'];
+    const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const rows = [cols.join(','), ...logs.map(l => cols.map(c => esc(l[c])).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${(selected.name || 'operator').replace(/\s+/g, '_')}_logs.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }, [logs, selected]);
 
   const loadOperators = useCallback(async () => {
     if (!configured) return;
@@ -67,6 +85,24 @@ export default function Dashboard() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadLogs(selectedId); }, [selectedId, loadLogs]);
 
+  // Live updates: operator list + logs for the selected operator (RLS-scoped).
+  useRealtimeTable('operators', setOperators, { enabled: configured });
+  useRealtimeTable('logs', setLogs, {
+    enabled: configured && !!selectedId,
+    filter: selectedId ? `operator_id=eq.${selectedId}` : undefined,
+    onEvent: ({ eventType, new: row }) => {
+      if (eventType !== 'INSERT' || row?.type !== 'harvest') return;
+      const m = computeMetrics([row, ...logs]);
+      if (m.fcr == null) return;
+      const r = rateFCR(primarySpeciesKey(selected), m.fcr);
+      if (r?.status === 'high') {
+        toast.warning(`${selected?.name || ''} — FCR ${m.fcr.toFixed(2)}`, {
+          description: lang === 'fr' ? 'Au-dessus de la plage optimale' : 'Above optimal range',
+        });
+      }
+    },
+  });
+
   const metrics = computeMetrics(logs);
   const speciesKey = primarySpeciesKey(selected);
   const rating = metrics.fcr != null ? rateFCR(speciesKey, metrics.fcr) : null;
@@ -82,7 +118,10 @@ export default function Dashboard() {
   return (
     <div className="@container/main max-w-7xl mx-auto px-4 py-8 space-y-6">
       {modalOpen && selected && (
-        <LogModal operator={selected} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(selectedId); }} />
+        <LogModal operator={selected} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(selectedId); setFeedKey(k => k + 1); }} />
+      )}
+      {eventModalOpen && selected && (
+        <EventModal operator={selected} onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); setFeedKey(k => k + 1); }} />
       )}
 
       {/* Header */}
@@ -98,7 +137,12 @@ export default function Dashboard() {
               <SelectContent>{operators.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
             </Select>
           )}
-          <Link href="/register" className="text-white px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand-accent)' }}>
+          {selected && logs.length > 0 && (
+            <button onClick={exportCsv} className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+              <Download className="size-4" /> CSV
+            </button>
+          )}
+          <Link href="/register" className="text-white px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand)' }}>
             <Plus className="size-4" /> <span className="hidden sm:inline">{t.dashboard.registerFirst.replace('+ ', '')}</span>
           </Link>
         </div>
@@ -147,13 +191,25 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>{selected.name}</CardTitle>
-              <CardAction>
-                <button onClick={() => setModalOpen(true)} className="text-white px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand-2)' }}>
+              <CardAction className="flex gap-2">
+                <button onClick={() => setEventModalOpen(true)} className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+                  <Plus className="size-4" /> {lang === 'fr' ? 'Événement' : 'Event'}
+                </button>
+                <button onClick={() => setModalOpen(true)} className="text-white px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand)' }}>
                   <Plus className="size-4" /> {t.dashboard.addLog.replace('+ ', '')}
                 </button>
               </CardAction>
             </CardHeader>
             <CardContent><LogsDataTable logs={logs} t={t} /></CardContent>
+          </Card>
+
+          {/* Activity journal (real-time) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{lang === 'fr' ? "Journal d'activité" : 'Activity journal'}</CardTitle>
+              <CardDescription>{lang === 'fr' ? 'Mis à jour en temps réel' : 'Updates in real time'}</CardDescription>
+            </CardHeader>
+            <CardContent><ActivityFeed operatorId={selectedId} fr={lang === 'fr'} reloadKey={feedKey} /></CardContent>
           </Card>
         </>
       )}

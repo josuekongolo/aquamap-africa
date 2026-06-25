@@ -81,7 +81,6 @@ export default function Knowledge() {
                 rel="noopener noreferrer"
                 className="group flex items-start gap-4 p-4 hover:bg-gray-50 transition"
               >
-                <KnowledgeIcon id={k.category} className="w-6 h-6 mt-0.5 text-[#0D6B8A] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-semibold text-[15px] leading-snug group-hover:underline text-black">{k.title}</h3>

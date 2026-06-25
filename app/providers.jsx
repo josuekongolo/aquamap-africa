@@ -8,6 +8,7 @@ import BottomNav from '@/src/components/BottomNav';
 import OfflineBanner from '@/src/components/OfflineBanner';
 import ServiceWorkerRegister from '@/src/components/ServiceWorkerRegister';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from 'sonner';
 
 export default function Providers({ children }) {
   return (
@@ -21,6 +22,7 @@ export default function Providers({ children }) {
             <Footer />
             <BottomNav />
           </div>
+          <Toaster richColors position="top-right" />
           <ServiceWorkerRegister />
         </TooltipProvider>
       </AuthProvider>

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import LogoMark from './LogoMark';
 import Link from 'next/link';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
@@ -33,8 +33,8 @@ export default function Footer() {
         {/* Brand */}
         <div className="lg:col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-3">
-            <Image src="/img/logo-mark.png" alt="" width={28} height={28} className="w-7 h-7 object-contain" />
-            <span className="font-display font-bold text-lg" style={{ color: 'var(--brand)' }}>AquaMap Africa</span>
+            <LogoMark className="w-7 h-7" style={{ color: 'var(--brand)' }} />
+            <span className="font-display font-bold text-lg" style={{ color: '#000' }}>AQAFRIKA</span>
           </Link>
           <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
             {fr
@@ -54,7 +54,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t">
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
-          <span>© {year} AquaMap Africa. {fr ? 'Tous droits réservés.' : 'All rights reserved.'}</span>
+          <span>© {year} AQAFRIKA. {fr ? 'Tous droits réservés.' : 'All rights reserved.'}</span>
           <span>{fr ? 'Données sourcées — FAO · WorldFish · CEDEAO · Banque mondiale' : 'Sourced data — FAO · WorldFish · ECOWAS · World Bank'}</span>
         </div>
       </div>

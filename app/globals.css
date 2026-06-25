@@ -62,7 +62,7 @@ body {
 }
 
 /* Editorial display serif + data mono helpers */
-.font-display { font-family: var(--font-display), Georgia, "Times New Roman", serif; }
+.font-display { font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif; }
 .font-mono2 { font-family: var(--font-mono), ui-monospace, monospace; }
 
 ::selection { background: var(--brand-accent); color: var(--ink); }
@@ -103,9 +103,115 @@ body {
   html { scroll-behavior: auto; }
 }
 
+/* ───────────────────────── Landing-page design system ─────────────────────
+   Tuned for dark deep-ocean (--ink) hero sections. Brand RGB:
+   --brand 13 107 138 · --brand-2 0 168 120 · --brand-accent 244 162 97 · --ink 6 48 61 */
+
+/* Deep-ocean atmospheric background — layered radial blooms over a near-black floor */
+.bg-hero-ocean {
+  background-color: #02151b;
+  background-image:
+    radial-gradient(60% 80% at 12% 8%, rgba(13, 107, 138, 0.5) 0%, transparent 55%),
+    radial-gradient(55% 70% at 88% 22%, rgba(0, 168, 120, 0.28) 0%, transparent 50%),
+    radial-gradient(75% 90% at 50% 115%, rgba(13, 107, 138, 0.38) 0%, transparent 60%),
+    linear-gradient(180deg, #06303d 0%, #02151b 100%);
+}
+
+/* Warm-kiss variant for the closing CTA */
+.bg-hero-tide {
+  background-color: #041f28;
+  background-image:
+    radial-gradient(50% 60% at 82% 0%, rgba(244, 162, 97, 0.16) 0%, transparent 55%),
+    radial-gradient(65% 75% at 8% 100%, rgba(0, 168, 120, 0.4) 0%, transparent 60%),
+    radial-gradient(60% 70% at 50% 35%, rgba(13, 107, 138, 0.46) 0%, transparent 65%),
+    linear-gradient(165deg, #06303d 0%, #02151b 100%);
+}
+
+/* Faint dot grid that fades toward the edges — the "data platform" texture */
+.bg-dotgrid {
+  background-image: radial-gradient(rgba(43, 167, 201, 0.14) 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 35%, #000 30%, transparent 78%);
+          mask-image: radial-gradient(ellipse 85% 65% at 50% 35%, #000 30%, transparent 78%);
+}
+
+/* Gradient headline text — brightened teal→green so it passes contrast on dark */
+.text-gradient-aqua {
+  background: linear-gradient(100deg, #3fd8c0 0%, #2ba7c9 45%, #16c98d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Soft teal/green aura behind the globe (cheaper than WebGL bloom) */
+.globe-halo {
+  position: absolute;
+  inset: -28%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 46%,
+    rgba(60, 200, 230, 0.55) 0%,
+    rgba(13, 107, 138, 0.4) 34%,
+    rgba(0, 168, 120, 0.18) 55%,
+    transparent 72%);
+  filter: blur(44px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Accent CTA glow — tight ring + wide soft bloom, brightens on hover */
+.btn-glow {
+  box-shadow:
+    0 0 0 1px rgba(0, 168, 120, 0.45),
+    0 4px 14px rgba(0, 168, 120, 0.32),
+    0 0 30px rgba(0, 168, 120, 0.28);
+  transition: box-shadow 0.25s ease, transform 0.25s ease, background-color 0.25s ease;
+}
+.btn-glow:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(20, 184, 134, 0.7),
+    0 6px 20px rgba(0, 168, 120, 0.42),
+    0 0 46px rgba(20, 200, 140, 0.42);
+}
+
+/* Status dot with a soft pulsing glow (mono eyebrow labels) */
+.dot-pulse {
+  box-shadow: 0 0 0 0 rgba(0, 168, 120, 0.55);
+  animation: dotPulse 2.4s ease-out infinite;
+}
+@keyframes dotPulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 168, 120, 0.5); }
+  70% { box-shadow: 0 0 0 7px rgba(0, 168, 120, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 168, 120, 0); }
+}
+
+/* Gentle idle float for the globe wrapper */
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.floaty { animation: floaty 7s ease-in-out infinite; }
+
+/* Scroll reveal — shares the .rise cubic-bezier so motion stays consistent */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal[data-shown='true'] { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .floaty, .dot-pulse { animation: none; }
+}
+
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
+  --font-heading: var(--font-display);
+  --font-sans: var(--font-body);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

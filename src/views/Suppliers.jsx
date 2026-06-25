@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Command } from 'cmdk';
-import { BadgeCheck, Phone, Mail, Handshake, Search, MapPin } from 'lucide-react';
+import { BadgeCheck, Phone, Mail, Search, MapPin } from 'lucide-react';
 import { suppliers, supplierCategories } from '../data/suppliers';
 import { SupplierIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -115,7 +115,7 @@ export default function Suppliers() {
                     {s.website ? (
                       <a href={s.website} target="_blank" rel="noopener noreferrer"
                         className="inline-block mt-1 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90"
-                        style={{ backgroundColor: '#F4A261' }}>
+                        style={{ backgroundColor: 'var(--brand)' }}>
                         {lang === 'fr' ? 'Visiter le site' : 'Visit website'} →
                       </a>
                     ) : (
@@ -129,14 +129,25 @@ export default function Suppliers() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="mt-12 rounded-2xl p-10 text-center text-white" style={{ background: 'linear-gradient(135deg, #0D6B8A 0%, #00A878 100%)' }}>
-        <div className="mb-4 flex justify-center"><Handshake className="w-12 h-12" /></div>
-        <h2 className="text-2xl font-bold mb-3">{t.suppliers.cta}</h2>
-        <p className="text-white/80 mb-6 max-w-md mx-auto">{t.suppliers.ctaDesc}</p>
-        <button className="text-teal-800 font-bold px-8 py-3 rounded-xl bg-white hover:bg-gray-50 transition text-lg">
-          {t.suppliers.ctaBtn} →
-        </button>
+      {/* CTA — list your company (editorial ink band) */}
+      <div className="mt-12 relative isolate rounded-2xl overflow-hidden" style={{ backgroundColor: 'var(--ink)' }}>
+        <div className="noise" />
+        <div className="relative px-8 py-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-xl">
+            <p className="font-mono2 text-[11px] uppercase tracking-[0.22em] text-[#7fd4be] mb-2">
+              {lang === 'fr' ? 'Annuaire des fournisseurs' : 'Supplier directory'}
+            </p>
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">{t.suppliers.cta}</h2>
+            <p className="text-white/70 text-sm leading-relaxed">{t.suppliers.ctaDesc}</p>
+          </div>
+          <a
+            href="mailto:i.josuekongolo@gmail.com?subject=AQAFRIKA%20%E2%80%94%20R%C3%A9f%C3%A9rencement%20fournisseur"
+            className="shrink-0 inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-full text-white hover:opacity-90 transition"
+            style={{ backgroundColor: 'var(--brand)' }}
+          >
+            {t.suppliers.ctaBtn} <span aria-hidden>→</span>
+          </a>
+        </div>
       </div>
 
       {/* ⌘K command palette (cmdk) */}

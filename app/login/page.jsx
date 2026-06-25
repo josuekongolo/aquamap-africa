@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Login from '@/src/views/Login';
 
-export const metadata = { title: 'Connexion — AquaMap Africa', robots: { index: false } };
+export const metadata = { title: 'Connexion — AQAFRIKA', robots: { index: false } };
 
 export default function Page() {
   return (

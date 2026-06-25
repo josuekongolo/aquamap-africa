@@ -169,3 +169,48 @@ create policy events_admin_read on public.events
 --      select id from auth.users where email = 'you@example.com'
 --    );
 -- ---------------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------------
+-- 7. REAL-TIME, EXPANDED EVENTS & JOURNAL  (run once; re-run safe)
+--    Powers: live dashboard/map (Realtime), richer event types, unified journal.
+-- ---------------------------------------------------------------------------
+
+-- 7a. Structured payload for richer events (mortality / treatment / water / sampling…).
+--     events.type is free-text, so new categories need no constraint change.
+alter table public.events add column if not exists details jsonb not null default '{}'::jsonb;
+
+-- 7b. Unified, RLS-respecting journal (logs ∪ events) for the timeline UI.
+--     security_invoker => the caller's existing RLS applies (agents see only theirs).
+create or replace view public.journal with (security_invoker = on) as
+  select id, operator_id, created_by, 'log'::text as source,
+         type as entry_type, log_date as entry_date, note as description,
+         jsonb_build_object(
+           'species', species, 'fingerlings_count', fingerlings_count,
+           'avg_weight_g', avg_weight_g, 'feed_kg', feed_kg,
+           'kg_harvested', kg_harvested, 'kg_sold', kg_sold,
+           'price_per_kg', price_per_kg, 'buyer_type', buyer_type
+         ) as data, null::text as severity, created_at
+  from public.logs
+  union all
+  select id, operator_id, created_by, 'event'::text as source,
+         type as entry_type, event_date as entry_date, description,
+         coalesce(details, '{}'::jsonb) as data, severity, created_at
+  from public.events;
+
+-- 7c. Realtime — expose tables on the supabase_realtime publication + full row images
+--     (replica identity full so UPDATE/DELETE payloads carry operator_id/created_by).
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'operators') then
+    alter publication supabase_realtime add table public.operators;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'logs') then
+    alter publication supabase_realtime add table public.logs;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'events') then
+    alter publication supabase_realtime add table public.events;
+  end if;
+end $$;
+alter table public.operators replica identity full;
+alter table public.logs      replica identity full;
+alter table public.events    replica identity full;

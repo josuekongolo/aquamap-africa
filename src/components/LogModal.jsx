@@ -158,7 +158,7 @@ export default function LogModal({ operator, onClose, onSaved }) {
             onClick={handleSave}
             disabled={saving}
             className="flex-1 py-2 rounded-lg text-white font-medium hover:opacity-90 disabled:opacity-60"
-            style={{ backgroundColor: '#00A878' }}
+            style={{ backgroundColor: '#0D6B8A' }}
           >
             {saving
               ? <RefreshCw className="w-4 h-4 animate-spin inline" />

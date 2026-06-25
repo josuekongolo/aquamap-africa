@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import LogoMark from '../components/LogoMark';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
+import { Input } from '../components/supabase-ui/Input';
+import { Button } from '../components/supabase-ui/Button';
 
 export default function Login() {
   const { t } = useLang();
@@ -50,9 +52,9 @@ export default function Login() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
-      <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+      <div className="bg-white rounded-xl border border-black/[0.08] shadow-sm p-8 max-w-md w-full">
         <div className="text-center mb-6">
-          <Image src="/img/logo-mark.png" alt="AquaMap Africa" width={56} height={56} className="w-14 h-14 mx-auto mb-2 object-contain" />
+          <LogoMark className="w-14 h-14 mx-auto mb-2" style={{ color: 'var(--brand)' }} />
           <h1 className="text-2xl font-bold text-black">
             {isSignup ? t.auth.signupTitle : t.auth.loginTitle}
           </h1>
@@ -60,17 +62,17 @@ export default function Login() {
         </div>
 
         {!configured && (
-          <div className="mb-4 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-3">
-<AlertTriangle className="inline w-4 h-4 -mt-0.5" /> {t.auth.notConfigured}
+          <div className="mb-4 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-md px-4 py-3">
+            <AlertTriangle className="inline w-4 h-4 -mt-0.5" /> {t.auth.notConfigured}
           </div>
         )}
         {error && (
-          <div className="mb-4 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">
+          <div className="mb-4 text-sm bg-red-50 border border-red-200 text-red-700 rounded-md px-4 py-3">
             {error}
           </div>
         )}
         {info && (
-          <div className="mb-4 text-sm bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3">
+          <div className="mb-4 text-sm bg-green-50 border border-green-200 text-green-700 rounded-md px-4 py-3">
             {info}
           </div>
         )}
@@ -78,46 +80,26 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignup && (
             <>
-              <Field label={t.auth.fullName} value={form.fullName} onChange={v => set('fullName', v)} />
-              <Field label={t.auth.organization} value={form.organization} onChange={v => set('organization', v)} />
+              <Input label={t.auth.fullName} value={form.fullName} onChange={e => set('fullName', e.target.value)} />
+              <Input label={t.auth.organization} value={form.organization} onChange={e => set('organization', e.target.value)} />
             </>
           )}
-          <Field label={t.auth.email} type="email" value={form.email} onChange={v => set('email', v)} required />
-          <Field label={t.auth.password} type="password" value={form.password} onChange={v => set('password', v)} required />
+          <Input label={t.auth.email} type="email" required value={form.email} onChange={e => set('email', e.target.value)} />
+          <Input label={t.auth.password} type="password" required value={form.password} onChange={e => set('password', e.target.value)} />
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full text-white font-semibold py-2.5 rounded-lg hover:opacity-90 transition disabled:opacity-60"
-            style={{ backgroundColor: '#0D6B8A' }}
-          >
+          <Button type="submit" variant="primary" size="large" block loading={busy} className="mt-2">
             {busy ? t.auth.signingIn : isSignup ? t.auth.signUp : t.auth.signIn}
-          </button>
+          </Button>
         </form>
 
         <button
           onClick={() => { setMode(isSignup ? 'signin' : 'signup'); setError(''); setInfo(''); }}
           className="mt-4 w-full text-sm text-center font-medium hover:underline"
-          style={{ color: '#0D6B8A' }}
+          style={{ color: '#000' }}
         >
           {isSignup ? t.auth.haveAccount : t.auth.noAccount}
         </button>
       </div>
-    </div>
-  );
-}
-
-function Field({ label, type = 'text', value, onChange, required }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input
-        type={type}
-        required={required}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400"
-      />
     </div>
   );
 }

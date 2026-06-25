@@ -182,7 +182,7 @@ export default function Register() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
                   <input
                     type={f.type}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="block w-full rounded-md border border-[#c7c7c7] bg-[#fbfbfb] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none placeholder:text-[#b2b2b2] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                     placeholder={f.placeholder}
                     value={form[f.key]}
                     onChange={e => setField(f.key, e.target.value)}
@@ -192,7 +192,7 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.country}</label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white"
+                  className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                   value={form.country}
                   onChange={e => setField('country', e.target.value)}
                 >
@@ -229,7 +229,7 @@ export default function Register() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.gender}</label>
                   <select
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                     value={form.gender}
                     onChange={e => setField('gender', e.target.value)}
                   >
@@ -242,7 +242,7 @@ export default function Register() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.ageRange}</label>
                   <select
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                     value={form.ageRange}
                     onChange={e => setField('ageRange', e.target.value)}
                   >
@@ -258,7 +258,7 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.legalStatus}</label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                   value={form.legalStatus}
                   onChange={e => setField('legalStatus', e.target.value)}
                 >
@@ -283,7 +283,7 @@ export default function Register() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.units}</label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="block w-full rounded-md border border-[#c7c7c7] bg-[#fbfbfb] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none placeholder:text-[#b2b2b2] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                     value={form.units}
                     onChange={e => setField('units', e.target.value)}
                     placeholder="Ex: 5"
@@ -293,7 +293,7 @@ export default function Register() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.area}</label>
                   <input
                     type="number"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    className="block w-full rounded-md border border-[#c7c7c7] bg-[#fbfbfb] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none placeholder:text-[#b2b2b2] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                     value={form.area}
                     onChange={e => setField('area', e.target.value)}
                     placeholder="Ex: 2000"
@@ -346,7 +346,7 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.waterSource}</label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                   value={form.waterSource}
                   onChange={e => setField('waterSource', e.target.value)}
                 >
@@ -397,7 +397,7 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.production}</label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                   value={form.production}
                   onChange={e => setField('production', e.target.value)}
                 >
@@ -412,7 +412,7 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.revenue}</label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                   value={form.revenue}
                   onChange={e => setField('revenue', e.target.value)}
                 >
@@ -426,7 +426,7 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t.register.sales}</label>
                 <select
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+                  className="block w-full rounded-md border border-[#d4d4d4] bg-[#fdfdfd] px-3 py-2.5 text-sm text-[#06303d] shadow-xs transition-all outline-none hover:border-[#8f8f8f] focus-visible:border-[#0D6B8A] focus-visible:ring-2 focus-visible:ring-[#0D6B8A]/20"
                   value={form.sales}
                   onChange={e => setField('sales', e.target.value)}
                 >
@@ -518,7 +518,7 @@ export default function Register() {
                 onClick={handleSubmit}
                 disabled={submitting}
                 className="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90 transition disabled:opacity-60"
-                style={{ backgroundColor: '#00A878' }}
+                style={{ backgroundColor: '#0D6B8A' }}
               >
                 {submitting
                   ? <RefreshCw className="w-4 h-4 animate-spin inline" />

@@ -11,6 +11,8 @@ import WeatherAdvisory from '../components/WeatherAdvisory';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { getMarineForecast } from '../lib/marine';
+import { useRealtimeTable } from '../lib/useRealtimeTable';
 
 const ExploreMap = dynamic(() => import('../components/explore/ExploreMap'), {
   ssr: false,
@@ -35,6 +37,7 @@ export default function MapPage({ liveProduction = {} }) {
   const [inBoundsOnly, setInBoundsOnly] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
   const [rightOpen, setRightOpen] = useState(false);
+  const [forecast, setForecast] = useState([]);
 
   // Operators only for authenticated agents.
   useEffect(() => {
@@ -46,6 +49,18 @@ export default function MapPage({ liveProduction = {} }) {
     })();
     return () => { active = false; };
   }, [user]);
+
+  // Live operator markers (RLS-scoped to the signed-in agent).
+  useRealtimeTable('operators', setOperators, { enabled: isSupabaseConfigured && !!user });
+
+  // Marine/weather casts (Open-Meteo) — fetched once when any cast layer is enabled.
+  const wantForecast = ['waves', 'sst', 'currents', 'wind'].some((k) => layers.has(k));
+  useEffect(() => {
+    if (!wantForecast || forecast.length) return;
+    let active = true;
+    getMarineForecast().then((pts) => { if (active) setForecast(pts); });
+    return () => { active = false; };
+  }, [wantForecast, forecast.length]);
 
   const onSelect = useCallback((f) => { setSelected(f); setRightOpen(true); }, []);
   const onBounds = useCallback((b) => setBounds(b), []);
@@ -63,6 +78,13 @@ export default function MapPage({ liveProduction = {} }) {
   const LAYER_DEFS = [
     ...(user ? [{ id: 'operators', label: fr ? 'Opérateurs' : 'Operators', color: '#0D6B8A', count: operators.length }] : []),
     { id: 'countries', label: fr ? 'Données par pays' : 'Country data', color: '#00A878', count: countries.length },
+  ];
+
+  const FORECAST_DEFS = [
+    { id: 'waves', label: fr ? 'Vagues' : 'Waves', color: '#41b6c4' },
+    { id: 'sst', label: fr ? 'Température mer' : 'Sea temp', color: '#fc8d59' },
+    { id: 'currents', label: fr ? 'Courants' : 'Currents', color: '#0D6B8A' },
+    { id: 'wind', label: fr ? 'Vent' : 'Wind', color: '#475569' },
   ];
 
   return (
@@ -84,6 +106,25 @@ export default function MapPage({ liveProduction = {} }) {
               <Switch on={layers.has(l.id)} onClick={() => toggleLayer(l.id)} />
             </label>
           ))}
+
+          {/* Marine / weather casts (Open-Meteo) */}
+          <div className="mt-3 pt-3 border-t">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 px-3 mb-1">
+              {fr ? 'Prévisions marines' : 'Marine forecast'}
+            </p>
+            {FORECAST_DEFS.map(l => (
+              <label key={l.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <span className="flex items-center gap-2.5 text-sm text-gray-700">
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: l.color }} />
+                  {l.label}
+                </span>
+                <Switch on={layers.has(l.id)} onClick={() => toggleLayer(l.id)} />
+              </label>
+            ))}
+            {wantForecast && forecast.length === 0 && (
+              <p className="text-[11px] text-gray-400 px-3 pt-1">{fr ? 'Chargement…' : 'Loading…'}</p>
+            )}
+          </div>
 
           {/* Background maps */}
           <div className="mt-3 pt-3 border-t">
@@ -108,7 +149,7 @@ export default function MapPage({ liveProduction = {} }) {
 
       {/* ─── Center: map ─── */}
       <div className="flex-1 relative">
-        <ExploreMap operators={operators} countries={countries} layers={layers} basemap={basemap} onSelect={onSelect} onBounds={onBounds} />
+        <ExploreMap operators={operators} countries={countries} layers={layers} basemap={basemap} forecast={forecast} onSelect={onSelect} onBounds={onBounds} />
         <button onClick={() => setLeftOpen(true)} className="md:hidden absolute top-3 left-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm font-medium flex items-center gap-1.5" style={{ color: '#0D6B8A' }}>
           <Layers className="w-4 h-4" /> {fr ? 'Couches' : 'Layers'}
         </button>

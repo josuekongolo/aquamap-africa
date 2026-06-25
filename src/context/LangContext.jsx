@@ -16,7 +16,7 @@ const translations = {
       lang: 'EN',
     },
     home: {
-      hero: 'La plateforme gratuite pour les aquaculteurs africains',
+      hero: 'La plateforme de l\'aquaculture africaine',
       heroSub: 'Enregistrez votre exploitation, suivez votre production, accédez aux connaissances FAO et connectez-vous aux fournisseurs.',
       cta: 'Enregistrez votre exploitation',
       ctaSub: 'Gratuit — Rejoignez 500+ opérateurs',
@@ -37,7 +37,7 @@ const translations = {
       countries: 'pays',
       fcr: 'FCR moyen',
     },
-    footer: 'AquaMap Africa — Développé avec ❤️ pour les aquaculteurs africains',
+    footer: 'AQAFRIKA — Développé avec ❤️ pour les aquaculteurs africains',
     register: {
       title: 'Enregistrer votre exploitation',
       step1: 'Identité',
@@ -69,7 +69,7 @@ const translations = {
       prev: '← Précédent',
       submit: 'Enregistrer mon exploitation',
       success: 'Votre exploitation a été enregistrée ✓',
-      successSub: 'Bienvenue dans AquaMap Africa ! Accédez à votre tableau de bord.',
+      successSub: 'Bienvenue dans AQAFRIKA ! Accédez à votre tableau de bord.',
       dashboard: 'Accéder au tableau de bord',
       yes: 'Oui',
       no: 'Non',
@@ -161,7 +161,7 @@ const translations = {
       subtitle: 'Trouvez les meilleurs fournisseurs pour votre exploitation',
       contact: 'Contacter',
       cta: 'Devenir fournisseur partenaire',
-      ctaDesc: 'Rejoignez notre réseau et connectez-vous à 500+ opérateurs africains',
+      ctaDesc: "Vous fournissez aliments, alevins, équipement RAS ou aération en Afrique de l'Ouest et Centrale ? Référencez votre entreprise dans cet annuaire vérifié.",
       ctaBtn: 'Soumettre votre candidature',
       categories: {
         all: 'Tous',
@@ -220,7 +220,7 @@ const translations = {
       lang: 'FR',
     },
     home: {
-      hero: 'The free platform for African aquaculture farmers',
+      hero: 'The platform for African aquaculture',
       heroSub: 'Register your farm, track your production, access FAO knowledge and connect with suppliers.',
       cta: 'Register your farm',
       ctaSub: 'Free — Join 500+ operators',
@@ -241,7 +241,7 @@ const translations = {
       countries: 'countries',
       fcr: 'Average FCR',
     },
-    footer: 'AquaMap Africa — Built with ❤️ for African aquaculture farmers',
+    footer: 'AQAFRIKA — Built with ❤️ for African aquaculture farmers',
     register: {
       title: 'Register your farm',
       step1: 'Identity',
@@ -273,7 +273,7 @@ const translations = {
       prev: '← Back',
       submit: 'Register my farm',
       success: 'Your farm has been registered ✓',
-      successSub: 'Welcome to AquaMap Africa! Access your dashboard.',
+      successSub: 'Welcome to AQAFRIKA! Access your dashboard.',
       dashboard: 'Go to dashboard',
       yes: 'Yes',
       no: 'No',
@@ -365,7 +365,7 @@ const translations = {
       subtitle: 'Find the best suppliers for your farm',
       contact: 'Contact',
       cta: 'Become a partner supplier',
-      ctaDesc: 'Join our network and connect with 500+ African operators',
+      ctaDesc: 'Do you supply feed, fingerlings, RAS or aeration equipment in West & Central Africa? Get your company listed in this verified directory.',
       ctaBtn: 'Submit application',
       categories: {
         all: 'All',

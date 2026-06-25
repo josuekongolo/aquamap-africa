@@ -27,12 +27,14 @@ export function AuthProvider({ children }) {
 
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
+      if (data.session?.access_token) supabase.realtime.setAuth(data.session.access_token);
       await loadAgent(data.session?.user?.id);
       setLoading(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       setSession(newSession);
+      if (newSession?.access_token) supabase.realtime.setAuth(newSession.access_token);
       await loadAgent(newSession?.user?.id);
     });
 
