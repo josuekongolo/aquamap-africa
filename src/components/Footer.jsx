@@ -37,11 +37,12 @@ export default function Footer() {
           </Link>
           <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
             {fr
-              ? "La plateforme de données aquacoles pour l'Afrique francophone — enregistrement des opérateurs, suivi de production et intelligence sectorielle."
-              : 'The aquaculture data platform for francophone Africa — operator registration, production tracking and sector intelligence.'}
+              ? "La plateforme de données aquacoles pour toute l'Afrique — enregistrement des opérateurs, suivi de production et intelligence sectorielle à l'échelle du continent."
+              : 'The aquaculture data platform for all of Africa — operator registration, production tracking and continent-wide sector intelligence.'}
           </p>
-          <div className="flex items-center gap-3 mt-4 text-sm text-gray-500">
-            <span>🇸🇳 Sénégal</span><span>🇨🇮 Côte d&apos;Ivoire</span><span>🇨🇲 Cameroun</span>
+          <div className="flex items-center gap-2 mt-4 text-xs text-gray-400">
+            <span>{fr ? 'Pays pilotes :' : 'Pilot countries:'}</span>
+            <span className="text-gray-500">🇸🇳 🇨🇮 🇨🇲</span>
           </div>
         </div>
 

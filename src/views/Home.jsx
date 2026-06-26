@@ -4,7 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, ArrowUpRight, Check } from 'lucide-react';
 import { useLang } from '../context/LangContext';
-import { countries, dataSources } from '../data/institutions';
+import { dataSources } from '../data/institutions';
+import { africaCountries } from '../data/africaCountries';
 import { speciesList } from '../data/species';
 import { knowledge } from '../data/knowledge';
 import { suppliers } from '../data/suppliers';
@@ -19,7 +20,7 @@ export default function Home() {
   const fr = lang === 'fr';
 
   const stat = [
-    { n: countries.length, l: fr ? 'pays couverts' : 'countries covered' },
+    { n: africaCountries.length, l: fr ? 'pays couverts' : 'countries covered' },
     { n: speciesList.length, l: fr ? 'espèces suivies' : 'species tracked' },
     { n: knowledge.length, l: fr ? 'ressources FAO' : 'FAO resources' },
     { n: suppliers.length, l: fr ? 'fournisseurs' : 'suppliers' },

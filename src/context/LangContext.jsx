@@ -161,7 +161,7 @@ const translations = {
       subtitle: 'Trouvez les meilleurs fournisseurs pour votre exploitation',
       contact: 'Contacter',
       cta: 'Devenir fournisseur partenaire',
-      ctaDesc: "Vous fournissez aliments, alevins, équipement RAS ou aération en Afrique de l'Ouest et Centrale ? Référencez votre entreprise dans cet annuaire vérifié.",
+      ctaDesc: "Vous fournissez aliments, alevins, équipement RAS ou aération en Afrique ? Référencez votre entreprise dans cet annuaire vérifié.",
       ctaBtn: 'Soumettre votre candidature',
       categories: {
         all: 'Tous',
@@ -365,7 +365,7 @@ const translations = {
       subtitle: 'Find the best suppliers for your farm',
       contact: 'Contact',
       cta: 'Become a partner supplier',
-      ctaDesc: 'Do you supply feed, fingerlings, RAS or aeration equipment in West & Central Africa? Get your company listed in this verified directory.',
+      ctaDesc: 'Do you supply feed, fingerlings, RAS or aeration equipment anywhere in Africa? Get your company listed in this verified directory.',
       ctaBtn: 'Submit application',
       categories: {
         all: 'All',
