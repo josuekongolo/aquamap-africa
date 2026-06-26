@@ -15,23 +15,15 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
   const isHome = pathname === '/';
   const isMap = pathname.startsWith('/map');
-  // dark/transparent only at the top of the homepage with no menu open
-  const onDark = isHome && !scrolled && !open;
+  // The bar always uses its solid frosted style (never the transparent dark state).
+  const onDark = false;
   // On the full-bleed map the bar hides itself; revealing on top-edge hover (desktop).
   const mapHidden = isMap && !revealed && !open;
   const isFr = lang === 'fr';
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Reveal the bar only when the cursor hits the very top edge of the map — a small
   // zone so reaching panel controls near the top doesn't pop it. Also suppressed
