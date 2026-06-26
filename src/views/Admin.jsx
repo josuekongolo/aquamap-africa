@@ -32,11 +32,20 @@ function operatorFCR(logsForOp) {
   return feed > 0 && gain > 0 ? feed / gain : null;
 }
 
+// Export EVERY column present on the operator rows (incl. phone, id, created_by …)
+// so admins get the complete record. Preferred fields lead; any others follow.
 function toCSV(rows) {
-  const cols = ['name', 'country', 'region', 'lat', 'lng', 'gender', 'age_range',
-    'legal_status', 'species', 'systems', 'units', 'area_m2', 'water_source',
+  if (!rows.length) return '';
+  const preferred = ['id', 'name', 'phone', 'country', 'region', 'lat', 'lng', 'gender',
+    'age_range', 'legal_status', 'species', 'systems', 'units', 'area_m2', 'water_source',
     'electricity', 'road_access', 'production_range', 'revenue_range', 'sales_channel',
-    'financing', 'training_wanted', 'challenges', 'created_at'];
+    'financing', 'training_wanted', 'challenges', 'created_by', 'created_at'];
+  const present = new Set();
+  for (const r of rows) for (const k of Object.keys(r)) present.add(k);
+  const cols = [
+    ...preferred.filter(c => present.has(c)),
+    ...[...present].filter(c => !preferred.includes(c)).sort(),
+  ];
   const esc = (v) => `"${String(Array.isArray(v) ? v.join('|') : (v ?? '')).replace(/"/g, '""')}"`;
   return [cols.join(','), ...rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n');
 }
@@ -90,11 +99,13 @@ export default function Admin() {
   }
   const bucketColor = ['#00A878', '#00A878', '#F4A261', '#F4A261', '#ef4444'];
 
-  function exportCSV() {
-    const blob = new Blob([toCSV(filtered)], { type: 'text/csv;charset=utf-8;' });
+  // Download the given operator rows as a complete CSV (every column).
+  function exportOperators(rows, filename) {
+    // BOM so Excel renders accents (Côte d'Ivoire, names) correctly.
+    const blob = new Blob(['﻿' + toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `aqafrika-operators-${filtered.length}.csv`; a.click();
+    a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -130,7 +141,7 @@ export default function Admin() {
           <h1 className="font-display text-3xl font-bold text-black">{t.admin.title}</h1>
           <p className="text-muted-foreground text-sm">{lang === 'fr' ? "Vue d'ensemble du secteur — opérateurs enregistrés" : 'Sector overview — registered operators'}</p>
         </div>
-        <Button onClick={exportCSV} disabled={filtered.length === 0} className="text-white" style={{ backgroundColor: 'var(--brand)' }}>
+        <Button onClick={() => exportOperators(filtered, `aqafrika-operators-${filtered.length}.csv`)} disabled={filtered.length === 0} className="text-white" style={{ backgroundColor: 'var(--brand)' }}>
           <Download className="size-4" /> {t.admin.export}
         </Button>
       </div>
@@ -255,7 +266,7 @@ export default function Admin() {
           </CardAction>
         </CardHeader>
         <CardContent>
-          {loading ? <Empty loading lang={lang} /> : <OperatorsDataTable operators={filtered} t={t} lang={lang} />}
+          {loading ? <Empty loading lang={lang} /> : <OperatorsDataTable operators={filtered} t={t} lang={lang} onExport={exportOperators} />}
         </CardContent>
       </Card>
 

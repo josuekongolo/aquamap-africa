@@ -5,7 +5,7 @@ import * as React from 'react';
 import {
   flexRender, getCoreRowModel, getSortedRowModel, getPaginationRowModel, useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronLeft, ChevronRight, Columns3 } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, Columns3, Download } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,7 +15,7 @@ import { SpeciesIcon } from '../../lib/icons';
 
 const SPECIES_KEY = { tilapia: 'Tilapia', silure: 'Silure', crevette: 'Crevette', carpe: 'Carpe' };
 
-export function OperatorsDataTable({ operators, t, lang }) {
+export function OperatorsDataTable({ operators, t, lang, onExport }) {
   const [sorting, setSorting] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
 
@@ -26,12 +26,21 @@ export function OperatorsDataTable({ operators, t, lang }) {
   );
 
   const colLabel = {
-    name: lang === 'fr' ? 'Nom' : 'Name', country: t.map.country,
-    species: t.map.species, systems: t.map.system, production_range: t.register.production,
+    name: lang === 'fr' ? 'Nom' : 'Name', phone: lang === 'fr' ? 'Téléphone' : 'Phone',
+    country: t.map.country, species: t.map.species, systems: t.map.system,
+    production_range: t.register.production, actions: '',
   };
+
+  const slug = (s) => (s || 'operator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
 
   const columns = React.useMemo(() => [
     { accessorKey: 'name', header: ({ column }) => sortBtn(column, colLabel.name), cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
+    {
+      accessorKey: 'phone', header: colLabel.phone, enableSorting: false,
+      cell: ({ row }) => row.original.phone
+        ? <a href={`tel:${row.original.phone}`} className="text-muted-foreground hover:text-[#0D6B8A] tabular-nums">{row.original.phone}</a>
+        : <span className="text-muted-foreground">—</span>,
+    },
     { accessorKey: 'country', header: ({ column }) => sortBtn(column, colLabel.country), cell: ({ row }) => <span className="text-muted-foreground">{row.original.country}</span> },
     {
       id: 'species', header: colLabel.species, enableSorting: false,
@@ -45,7 +54,19 @@ export function OperatorsDataTable({ operators, t, lang }) {
     },
     { id: 'systems', header: colLabel.systems, enableSorting: false, cell: ({ row }) => <span className="text-muted-foreground">{(row.original.systems || []).join(', ') || '—'}</span> },
     { accessorKey: 'production_range', header: () => <div className="text-right">{colLabel.production_range}</div>, enableSorting: false, cell: ({ row }) => <div className="text-right font-medium">{row.original.production_range || '—'}</div> },
-  ], [t, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+    {
+      id: 'actions', header: '', enableSorting: false, enableHiding: false,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <Button variant="ghost" size="icon" className="size-8"
+            title={lang === 'fr' ? 'Télécharger la fiche complète' : 'Download full record'}
+            onClick={() => onExport?.([row.original], `aqafrika-${slug(row.original.name)}.csv`)}>
+            <Download className="size-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ], [t, lang, onExport]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const table = useReactTable({
     data: operators, columns,
