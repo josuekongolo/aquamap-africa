@@ -6,6 +6,10 @@ import { Waves, Fish, Droplets, Recycle, Wheat, Shrimp, CircleCheck, MapPin, Ref
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { africaCountries } from '../data/africaCountries';
+
+// All African countries (alphabetical) for the operator country selector.
+const COUNTRY_OPTIONS = africaCountries.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'fr'));
 
 const systems = [
   { id: 'etang', label: 'Étang', Icon: Waves },
@@ -35,7 +39,7 @@ const challenges = [
 ];
 
 export default function Register() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { user, configured } = useAuth();
   const [step, setStep] = useState(1);
   const [done, setDone] = useState(false);
@@ -196,11 +200,8 @@ export default function Register() {
                   value={form.country}
                   onChange={e => setField('country', e.target.value)}
                 >
-                  <option value="">Sélectionner...</option>
-                  <option>Sénégal</option>
-                  <option>Côte d&apos;Ivoire</option>
-                  <option>Cameroun</option>
-                  <option>Autre</option>
+                  <option value="">{lang === 'fr' ? 'Sélectionner…' : 'Select…'}</option>
+                  {COUNTRY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>

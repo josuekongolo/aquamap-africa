@@ -40,10 +40,6 @@ export default function Footer() {
               ? "La plateforme de données aquacoles pour toute l'Afrique — enregistrement des opérateurs, suivi de production et intelligence sectorielle à l'échelle du continent."
               : 'The aquaculture data platform for all of Africa — operator registration, production tracking and continent-wide sector intelligence.'}
           </p>
-          <div className="flex items-center gap-2 mt-4 text-xs text-gray-400">
-            <span>{fr ? 'Pays pilotes :' : 'Pilot countries:'}</span>
-            <span className="text-gray-500">🇸🇳 🇨🇮 🇨🇲</span>
-          </div>
         </div>
 
         <FooterCol title={fr ? 'Plateforme' : 'Platform'} links={platform} />
