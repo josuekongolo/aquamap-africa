@@ -48,6 +48,7 @@ export default function Navbar() {
     { to: '/map', label: t.nav.map },
     { to: '/knowledge', label: t.nav.knowledge },
     { to: '/suppliers', label: t.nav.suppliers },
+    { to: '/about', label: t.nav.about },
     ...(user ? [{ to: '/dashboard', label: t.nav.dashboard }] : []),
     ...(isAdmin ? [{ to: '/admin', label: t.nav.admin }] : []),
   ];

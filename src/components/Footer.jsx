@@ -18,6 +18,7 @@ export default function Footer() {
   const resources = [
     { label: t.nav.knowledge, href: '/knowledge' },
     { label: t.nav.suppliers, href: '/suppliers' },
+    { label: t.nav.about, href: '/about' },
   ];
   const sources = [
     { label: 'FAO FishStat', href: 'https://www.fao.org/fishery/en/fishstat' },
