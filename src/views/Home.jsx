@@ -68,7 +68,6 @@ export default function Home({ counts } = {}) {
           <source src="/video/hero.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,48,61,0.74) 0%, rgba(11,80,103,0.5) 50%, rgba(6,48,61,0.76) 100%)' }} />
-        <div className="absolute inset-0 bg-dotgrid pointer-events-none" />
 
         <div className="relative max-w-3xl mx-auto px-6 flex flex-col items-center justify-center text-center min-h-[88vh] py-24">
           <h1 className="rise font-display font-medium tracking-[-0.02em] text-balance mb-6"
