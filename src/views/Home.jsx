@@ -15,7 +15,7 @@ import CountUp from '../components/CountUp';
 // Aesthetic: editorial data-journal meets sector-intelligence dashboard. Interactive
 // deep-ocean globe centred on the three focus countries; brightened brand gradients,
 // glassy glow, scroll reveals. Display serif (Fraunces) + grotesque body + mono data.
-export default function Home() {
+export default function Home({ counts } = {}) {
   const { t, lang } = useLang();
   const fr = lang === 'fr';
 
@@ -23,7 +23,7 @@ export default function Home() {
     { n: africaCountries.length, l: fr ? 'pays couverts' : 'countries covered' },
     { n: speciesList.length, l: fr ? 'espèces suivies' : 'species tracked' },
     { n: knowledge.length, l: fr ? 'ressources FAO' : 'FAO resources' },
-    { n: suppliers.length, l: fr ? 'fournisseurs' : 'suppliers' },
+    { n: counts?.suppliers ?? suppliers.length, l: fr ? 'fournisseurs' : 'suppliers' },
   ];
 
   const features = [
@@ -95,7 +95,7 @@ export default function Home() {
           <div className="rise flex flex-wrap items-start justify-center divide-x divide-white/15" style={{ animationDelay: '320ms' }}>
             {stat.map((s, i) => (
               <div key={i} className="px-5 sm:px-7 text-center">
-                <div className="font-display text-3xl font-semibold leading-none">{s.n}</div>
+                <div className="font-display text-3xl font-semibold leading-none">{s.n.toLocaleString()}</div>
                 <div className="font-mono2 text-[10px] uppercase tracking-wider text-white mt-1.5">{s.l}</div>
               </div>
             ))}
