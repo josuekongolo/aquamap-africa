@@ -1,13 +1,30 @@
 // Central icon mapping (lucide-react) for data-driven icons — replaces emoji.
 import {
-  Fish, Shrimp, Wheat, Droplets, Recycle, Wind, Microscope, Scale,
+  Fish, Wheat, Droplets, Recycle, Wind, Microscope, Scale,
   BookOpen, Library, HeartPulse, Tag, Egg, Boxes, Banknote, Package, Leaf, HandCoins,
 } from 'lucide-react';
 
-const SPECIES = { Tilapia: Fish, Silure: Fish, Carpe: Fish, Crevette: Shrimp };
-export function SpeciesIcon({ name, ...props }) {
-  const I = SPECIES[name] || Fish;
-  return <I {...props} />;
+// Each species maps to a custom illustration (public/img/species/*.png). Visually
+// similar species reuse a body type (hybrid catfish → catfish, grass carp → carp).
+const SPECIES_IMG = {
+  Tilapia: 'tilapia',
+  Silure: 'catfish',
+  'Silure hybride': 'catfish',
+  Carpe: 'carp',
+  'Carpe herbivore': 'carp',
+  Crevette: 'prawn',
+  'Crevette blanche': 'shrimp',
+  'Dorade royale': 'seabream',
+  Bar: 'seabass',
+  Mulet: 'mullet',
+};
+export function SpeciesIcon({ name, className = '', style }) {
+  const slug = SPECIES_IMG[name];
+  if (slug) {
+    // eslint-disable-next-line @next/next/no-img-element -- small static species illustration
+    return <img src={`/img/species/${slug}.png`} alt="" aria-hidden className={`object-contain ${className}`} style={style} />;
+  }
+  return <Fish className={className} style={style} />;
 }
 
 const KNOW = {
