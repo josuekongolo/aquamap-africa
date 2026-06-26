@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import LogoMark from '../components/LogoMark';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle } from 'lucide-react';
 import { useLang } from '../context/LangContext';
@@ -54,7 +53,8 @@ export default function Login() {
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
       <div className="bg-white rounded-xl border border-black/[0.08] shadow-sm p-8 max-w-md w-full">
         <div className="text-center mb-6">
-          <LogoMark className="w-14 h-14 mx-auto mb-2" style={{ color: 'var(--brand)' }} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark; next/image optimization is unnecessary */}
+          <img src="/img/logo-mark.png" alt="AQAFRIKA" className="w-14 h-14 mx-auto mb-2 object-contain" />
           <h1 className="text-2xl font-bold text-black">
             {isSignup ? t.auth.signupTitle : t.auth.loginTitle}
           </h1>
