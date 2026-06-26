@@ -107,12 +107,31 @@ export default function Dashboard() {
   const speciesKey = primarySpeciesKey(selected);
   const rating = metrics.fcr != null ? rateFCR(speciesKey, metrics.fcr) : null;
 
-  const chartData = [...logs]
-    .sort((a, b) => String(a.log_date).localeCompare(String(b.log_date)))
-    .map(l => ({ date: l.log_date, feed: l.type === 'feed' ? Number(l.feed_kg) || 0 : 0, harvest: l.type === 'harvest' ? Number(l.kg_harvested) || 0 : 0 }));
-  const chartConfig = {
-    feed: { label: lang === 'fr' ? 'Aliments (kg)' : 'Feed (kg)', color: 'var(--brand)' },
-    harvest: { label: lang === 'fr' ? 'Récolte (kg)' : 'Harvest (kg)', color: 'var(--brand-2)' },
+  const fr = lang === 'fr';
+  // Aggregate logs by date into a real production time series (sum per day).
+  const seriesData = (() => {
+    const byDate = {};
+    for (const l of logs) {
+      const d = l.log_date;
+      if (!d) continue;
+      const e = (byDate[d] ||= { date: d, feed: 0, harvest: 0, stocking: 0, sold: 0, revenue: 0 });
+      if (l.type === 'feed') e.feed += Number(l.feed_kg) || 0;
+      else if (l.type === 'harvest') {
+        e.harvest += Number(l.kg_harvested) || 0;
+        e.sold += Number(l.kg_sold) || 0;
+        e.revenue += (Number(l.kg_sold) || 0) * (Number(l.price_per_kg) || 0);
+      } else if (l.type === 'stocking') {
+        e.stocking += ((Number(l.fingerlings_count) || 0) * (Number(l.avg_weight_g) || 0)) / 1000;
+      }
+    }
+    return Object.values(byDate).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  })();
+  const seriesConfig = {
+    feed: { label: fr ? 'Aliments (kg)' : 'Feed (kg)', color: 'var(--brand)' },
+    harvest: { label: fr ? 'Récolte (kg)' : 'Harvest (kg)', color: 'var(--brand-2)' },
+    stocking: { label: fr ? 'Empoissonnement (kg)' : 'Stocking (kg)', color: '#F4A261' },
+    sold: { label: fr ? 'Vendu (kg)' : 'Sold (kg)', color: '#8b5cf6' },
+    revenue: { label: fr ? 'Revenu (FCFA)' : 'Revenue', color: '#06b6d4' },
   };
 
   return (
@@ -174,9 +193,10 @@ export default function Dashboard() {
           </div>
 
           {/* Interactive chart */}
-          <ChartAreaInteractive data={chartData} config={chartConfig}
-            title={lang === 'fr' ? 'Aliments & récoltes' : 'Feed & harvests'}
-            description={lang === 'fr' ? 'Saisies de production dans le temps' : 'Production logs over time'} />
+          <ChartAreaInteractive data={seriesData} config={seriesConfig}
+            filename={`${(selected.name || 'operator').replace(/\s+/g, '_')}_production`}
+            title={lang === 'fr' ? 'Production dans le temps' : 'Production over time'}
+            description={lang === 'fr' ? 'Choisissez les indicateurs à afficher' : 'Choose which metrics to display'} />
 
           {/* FCR insight + weather */}
           <div className="grid lg:grid-cols-2 gap-4">
