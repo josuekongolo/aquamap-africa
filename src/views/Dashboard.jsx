@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download } from 'lucide-react';
+import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye } from 'lucide-react';
 import { rateFCR } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -15,15 +15,40 @@ import LogModal from '../components/LogModal';
 import EventModal from '../components/EventModal';
 import WeatherAdvisory from '../components/WeatherAdvisory';
 import FCRInsight from '../components/FCRInsight';
-import ActivityFeed from '../components/dashboard/ActivityFeed';
+import GrowthCurveChart from '../components/dashboard/GrowthCurveChart';
 import { LogsDataTable } from '../components/dashboard/LogsDataTable';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const SPECIES_KEY = { tilapia: 'Tilapia', silure: 'Silure', crevette: 'Crevette', carpe: 'Carpe' };
 const STATUS_LABEL = { excellent: 'fcrExcellent', correct: 'fcrCorrect', high: 'fcrHigh' };
+
+const EVENT_META = {
+  mortality: { Icon: Skull, fr: 'Mortalité', en: 'Mortality' },
+  treatment: { Icon: Pill, fr: 'Traitement', en: 'Treatment' },
+  water: { Icon: Droplets, fr: "Qualité d'eau", en: 'Water quality' },
+  sampling: { Icon: Ruler, fr: 'Échantillon', en: 'Sampling' },
+  observation: { Icon: Eye, fr: 'Observation', en: 'Observation' },
+};
+const SEVERITY_CLS = {
+  high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-600',
+};
+
+// Human-readable detail chips from an event's structured `details` JSON.
+function eventDetails(e, fr) {
+  const d = e.details || {};
+  const out = [];
+  const add = (label, val, unit = '') => { if (val != null && val !== '') out.push(`${label}: ${val}${unit}`); };
+  if (e.type === 'mortality') { add(fr ? 'Nombre' : 'Count', d.count); add(fr ? 'Cause' : 'Cause', d.cause); }
+  else if (e.type === 'treatment') { add(fr ? 'Produit' : 'Product', d.product); add(fr ? 'Dose' : 'Dose', d.dose); }
+  else if (e.type === 'water') { add(fr ? 'Temp.' : 'Temp', d.temp_c, '°C'); add('pH', d.ph); add(fr ? 'O₂' : 'DO', d.do_mgl, ' mg/L'); }
+  else if (e.type === 'sampling') { add(fr ? 'Échantillon' : 'Sampled', d.count); add(fr ? 'Poids moy.' : 'Avg wt', d.avg_weight_g, ' g'); }
+  return out;
+}
 
 function primarySpeciesKey(operator) {
   return SPECIES_KEY[operator?.species?.[0]] || 'Tilapia';
@@ -46,10 +71,11 @@ export default function Dashboard() {
   const [operators, setOperators] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(configured);
   const [modalOpen, setModalOpen] = useState(false);
   const [eventModalOpen, setEventModalOpen] = useState(false);
-  const [feedKey, setFeedKey] = useState(0);
+  const [eventTab, setEventTab] = useState('all');
   const [error, setError] = useState('');
 
   const selected = operators.find(o => o.id === selectedId) || null;
@@ -80,13 +106,25 @@ export default function Dashboard() {
     setLogs(data || []);
   }, [configured]);
 
+  const loadEvents = useCallback(async (operatorId) => {
+    if (!configured || !operatorId) return;
+    const { data } = await supabase.from('events').select('*').eq('operator_id', operatorId).order('event_date', { ascending: false });
+    setEvents(data || []);
+  }, [configured]);
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadOperators(); }, [loadOperators]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadLogs(selectedId); }, [selectedId, loadLogs]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadEvents(selectedId); }, [selectedId, loadEvents]);
 
-  // Live updates: operator list + logs for the selected operator (RLS-scoped).
+  // Live updates: operator list + logs + events for the selected operator (RLS-scoped).
   useRealtimeTable('operators', setOperators, { enabled: configured });
+  useRealtimeTable('events', setEvents, {
+    enabled: configured && !!selectedId,
+    filter: selectedId ? `operator_id=eq.${selectedId}` : undefined,
+  });
   useRealtimeTable('logs', setLogs, {
     enabled: configured && !!selectedId,
     filter: selectedId ? `operator_id=eq.${selectedId}` : undefined,
@@ -137,10 +175,10 @@ export default function Dashboard() {
   return (
     <div className="@container/main max-w-7xl mx-auto px-4 py-8 space-y-6">
       {modalOpen && selected && (
-        <LogModal operator={selected} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(selectedId); setFeedKey(k => k + 1); }} />
+        <LogModal operator={selected} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(selectedId); }} />
       )}
       {eventModalOpen && selected && (
-        <EventModal operator={selected} onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); setFeedKey(k => k + 1); }} />
+        <EventModal operator={selected} onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); loadEvents(selectedId); }} />
       )}
 
       {/* Header */}
@@ -198,6 +236,9 @@ export default function Dashboard() {
             title={lang === 'fr' ? 'Production dans le temps' : 'Production over time'}
             description={lang === 'fr' ? 'Choisissez les indicateurs à afficher' : 'Choose which metrics to display'} />
 
+          {/* Species growth curve (benchmark + actual samples) */}
+          <GrowthCurveChart speciesKey={speciesKey} logs={logs} events={events} fr={fr} />
+
           {/* FCR insight + weather */}
           <div className="grid lg:grid-cols-2 gap-4">
             {metrics.fcr != null && (
@@ -211,10 +252,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle>{selected.name}</CardTitle>
-              <CardAction className="flex gap-2">
-                <button onClick={() => setEventModalOpen(true)} className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
-                  <Plus className="size-4" /> {lang === 'fr' ? 'Événement' : 'Event'}
-                </button>
+              <CardAction>
                 <button onClick={() => setModalOpen(true)} className="text-white px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand)' }}>
                   <Plus className="size-4" /> {t.dashboard.addLog.replace('+ ', '')}
                 </button>
@@ -223,13 +261,61 @@ export default function Dashboard() {
             <CardContent><LogsDataTable logs={logs} t={t} /></CardContent>
           </Card>
 
-          {/* Activity journal (real-time) */}
+          {/* Events (mortality, treatment, water quality, sampling, observation) */}
           <Card>
-            <CardHeader>
-              <CardTitle>{lang === 'fr' ? "Journal d'activité" : 'Activity journal'}</CardTitle>
-              <CardDescription>{lang === 'fr' ? 'Mis à jour en temps réel' : 'Updates in real time'}</CardDescription>
+            <CardHeader className="flex-row items-center justify-between">
+              <div>
+                <CardTitle>{fr ? 'Événements' : 'Events'}</CardTitle>
+                <CardDescription>{fr ? "Mortalité, traitements, qualité d'eau, échantillons…" : 'Mortality, treatments, water quality, sampling…'}</CardDescription>
+              </div>
+              <CardAction>
+                <button onClick={() => setEventModalOpen(true)} className="px-3 py-1.5 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+                  <Plus className="size-4" /> {fr ? 'Événement' : 'Event'}
+                </button>
+              </CardAction>
             </CardHeader>
-            <CardContent><ActivityFeed operatorId={selectedId} fr={lang === 'fr'} reloadKey={feedKey} /></CardContent>
+            <CardContent className="space-y-3">
+              <Tabs value={eventTab} onValueChange={setEventTab}>
+                <TabsList className="flex-wrap h-auto">
+                  <TabsTrigger value="all">{t.map.all}</TabsTrigger>
+                  {Object.entries(EVENT_META).map(([id, m]) => (
+                    <TabsTrigger key={id} value={id}>{fr ? m.fr : m.en}</TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <div className="rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{fr ? 'Type' : 'Type'}</TableHead>
+                      <TableHead>{fr ? 'Date' : 'Date'}</TableHead>
+                      <TableHead>{fr ? 'Gravité' : 'Severity'}</TableHead>
+                      <TableHead>{fr ? 'Détails' : 'Details'}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      const rows = eventTab === 'all' ? events : events.filter((e) => e.type === eventTab);
+                      if (rows.length === 0) {
+                        return <TableRow><TableCell colSpan={4} className="h-20 text-center text-muted-foreground">{fr ? 'Aucun événement.' : 'No events.'}</TableCell></TableRow>;
+                      }
+                      return rows.map((e) => {
+                      const meta = EVENT_META[e.type] || { Icon: Eye, fr: e.type, en: e.type };
+                      const details = [...eventDetails(e, fr), e.description].filter(Boolean).join(' · ');
+                      return (
+                        <TableRow key={e.id}>
+                          <TableCell><span className="inline-flex items-center gap-1.5 font-medium"><meta.Icon className="size-3.5 text-[#0D6B8A]" /> {fr ? meta.fr : meta.en}</span></TableCell>
+                          <TableCell className="tabular-nums text-muted-foreground whitespace-nowrap">{e.event_date}</TableCell>
+                          <TableCell>{e.severity ? <Badge variant="outline" className={`border-transparent ${SEVERITY_CLS[e.severity] || ''}`}>{e.severity}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                          <TableCell className="text-muted-foreground">{details || '—'}</TableCell>
+                        </TableRow>
+                      );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
           </Card>
         </>
       )}
