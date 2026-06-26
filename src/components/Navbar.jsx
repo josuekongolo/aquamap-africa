@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, LogOut, Plus } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
-import LogoMark from './LogoMark';
 
 // Scroll-adaptive chrome (Vercel/Linear pattern): transparent over the dark globe
 // hero on the homepage, frosted light glass once scrolled or on any other page.
@@ -17,10 +16,14 @@ export default function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   const isHome = pathname === '/';
+  const isMap = pathname.startsWith('/map');
   // dark/transparent only at the top of the homepage with no menu open
   const onDark = isHome && !scrolled && !open;
+  // On the full-bleed map the bar hides itself; revealing on top-edge hover (desktop).
+  const mapHidden = isMap && !revealed && !open;
   const isFr = lang === 'fr';
 
   useEffect(() => {
@@ -29,6 +32,21 @@ export default function Navbar() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Reveal the bar only when the cursor hits the very top edge of the map — a small
+  // zone so reaching panel controls near the top doesn't pop it. Also suppressed
+  // entirely while the cursor is over a side panel. Hysteresis (6 / 56) avoids flicker.
+  useEffect(() => {
+    if (!isMap) return; // off the map, `revealed` is unused (mapHidden is false)
+    const onMove = (e) => {
+      const overPanel = typeof e.target?.closest === 'function' && e.target.closest('aside');
+      if (overPanel) { setRevealed(false); return; }
+      if (e.clientY <= 6) setRevealed(true);
+      else if (e.clientY > 56) setRevealed(false);
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, [isMap]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close mobile menu on navigation
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -54,7 +72,10 @@ export default function Navbar() {
     <>
       <nav
         className={[
-          'fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300 ease-out',
+          'fixed inset-x-0 top-0 transition-[background-color,border-color,box-shadow,backdrop-filter,transform] duration-300 ease-out',
+          // On the map, float above the side panels (z-[1100]) so the revealed bar isn't hidden behind them.
+          isMap ? 'z-[1200]' : 'z-50',
+          mapHidden ? 'md:-translate-y-full' : 'translate-y-0',
           onDark
             ? 'bg-transparent border-b border-white/10'
             : 'bg-white/70 backdrop-blur-xl backdrop-saturate-150 border-b border-black/[0.06] shadow-[0_1px_20px_-8px_rgba(6,48,61,0.25)]',
@@ -64,8 +85,9 @@ export default function Navbar() {
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Brand — two-tone wordmark, mark nudges on hover */}
             <Link href="/" className="group flex items-center gap-2.5 shrink-0">
-              <LogoMark className="w-8 h-8 transition-transform duration-300 group-hover:scale-105"
-                style={{ color: onDark ? '#fff' : 'var(--brand)' }} />
+              {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark; next/image optimization is unnecessary */}
+              <img src="/img/logo-mark.png" alt="" aria-hidden="true"
+                className="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-105" />
               <span className="hidden sm:block font-display font-semibold text-[17px] tracking-tight transition-colors"
                 style={{ color: onDark ? '#fff' : '#000' }}>
                 AQA<span style={{ color: onDark ? 'var(--brand-2)' : '#000' }}>FRIKA</span>
@@ -174,9 +196,10 @@ export default function Navbar() {
         )}
       </nav>
 
-      {/* The navbar is fixed; reserve its height on every page except the homepage,
-          whose dark hero is meant to sit beneath the transparent bar. */}
-      {!isHome && <div aria-hidden className="h-16" />}
+      {/* The navbar is fixed; reserve its height on every page except the homepage
+          (dark hero sits beneath the transparent bar) and the desktop map, which
+          goes full-bleed with the bar auto-hiding above it. */}
+      {!isHome && <div aria-hidden className={`h-16 ${isMap ? 'md:hidden' : ''}`} />}
     </>
   );
 }

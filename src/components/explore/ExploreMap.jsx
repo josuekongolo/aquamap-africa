@@ -40,6 +40,7 @@ const FIELDS = [
 
 const LAYER_MAP = {
   operators: ['op-clusters', 'op-cluster-count', 'op-point'],
+  sites: ['site-clusters', 'site-cluster-count', 'site-point'],
   waves: ['fld-waves'],
   sst: ['fld-sst'],
   currents: ['fld-cur', 'fc-currents'],
@@ -102,6 +103,13 @@ function operatorsGeoJSON(operators) {
       .map((o) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [o.lng, o.lat] }, properties: { id: o.id } })),
   };
 }
+function sitesGeoJSON(sites) {
+  return {
+    type: 'FeatureCollection',
+    features: sites.filter((s) => s.lat != null && s.lng != null)
+      .map((s) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [s.lng, s.lat] }, properties: { id: s.id } })),
+  };
+}
 function countryEl(flag, color) {
   const el = document.createElement('div');
   el.style.cssText =
@@ -146,24 +154,26 @@ function Legend({ layers, fr }) {
   );
 }
 
-export default function ExploreMap({ operators = [], countries = [], layers, basemap = 'osm', forecast = null, onSelect, onBounds }) {
+export default function ExploreMap({ operators = [], sites = [], countries = [], layers, basemap = 'osm', forecast = null, focus = null, onSelect, onBounds }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const countryMarkersRef = useRef([]);
   const opIndexRef = useRef(new Map());
+  const siteIndexRef = useRef(new Map());
   const cb = useRef({ onSelect, onBounds });
 
   useEffect(() => {
     cb.current = { onSelect, onBounds };
     opIndexRef.current = new Map(operators.map((o) => [o.id, o]));
+    siteIndexRef.current = new Map(sites.map((s) => [s.id, s]));
   });
 
   useEffect(() => {
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: styleFor(basemap),
-      center: [-3, 9],
-      zoom: 4.4,
+      center: [20, 3],
+      zoom: 2.7,
       attributionControl: { compact: true },
     });
     mapRef.current = map;
@@ -242,6 +252,36 @@ export default function ExploreMap({ operators = [], countries = [], layers, bas
         }
       }
 
+      // ── aquaculture sites (Places, clustered, green) ──
+      if (!map.getSource('sites')) {
+        map.addSource('sites', { type: 'geojson', data: sitesGeoJSON([...siteIndexRef.current.values()]), cluster: true, clusterRadius: 50, clusterMaxZoom: 12 });
+        map.addLayer({
+          id: 'site-clusters', type: 'circle', source: 'sites', filter: ['has', 'point_count'],
+          paint: { 'circle-color': 'rgba(244,162,97,0.9)', 'circle-stroke-color': 'rgba(255,255,255,0.85)', 'circle-stroke-width': 3, 'circle-radius': ['step', ['get', 'point_count'], 17, 10, 21, 50, 26] },
+        });
+        map.addLayer({
+          id: 'site-cluster-count', type: 'symbol', source: 'sites', filter: ['has', 'point_count'],
+          layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-font': ['Noto Sans Bold'], 'text-size': 13 }, paint: { 'text-color': '#fff' },
+        });
+        map.addLayer({
+          id: 'site-point', type: 'circle', source: 'sites', filter: ['!', ['has', 'point_count']],
+          paint: { 'circle-color': '#F4A261', 'circle-radius': 7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 },
+        });
+        map.on('click', 'site-clusters', (e) => {
+          const f = map.queryRenderedFeatures(e.point, { layers: ['site-clusters'] })[0];
+          if (!f) return;
+          map.getSource('sites').getClusterExpansionZoom(f.properties.cluster_id).then((z) => map.easeTo({ center: f.geometry.coordinates, zoom: z }));
+        });
+        map.on('click', 'site-point', (e) => {
+          const s = siteIndexRef.current.get(e.features[0].properties.id);
+          if (s) cb.current.onSelect?.({ kind: 'site', data: s });
+        });
+        for (const id of ['site-clusters', 'site-point']) {
+          map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
+          map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
+        }
+      }
+
       // ── direction arrows for currents / wind (on top) ──
       if (!map.getSource('forecast-points')) {
         map.addSource('forecast-points', { type: 'geojson', data: pointsGeoJSON(mapRef.current?._forecast?.points || []) });
@@ -271,6 +311,14 @@ export default function ExploreMap({ operators = [], countries = [], layers, bas
   useEffect(() => { if (mapRef.current) mapRef.current.setStyle(styleFor(basemap)); }, [basemap]);
 
   useEffect(() => { mapRef.current?.getSource('operators')?.setData(operatorsGeoJSON(operators)); }, [operators]);
+
+  useEffect(() => { mapRef.current?.getSource('sites')?.setData(sitesGeoJSON(sites)); }, [sites]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focus) return;
+    map.flyTo({ center: focus, zoom: Math.max(map.getZoom(), 9), essential: true });
+  }, [focus]);
 
   useEffect(() => {
     const map = mapRef.current;

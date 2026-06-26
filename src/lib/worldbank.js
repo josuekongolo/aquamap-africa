@@ -1,15 +1,16 @@
 // World Bank Indicators API — live aquaculture production (metric tons).
 // Free, no key. Indicator ER.FSH.AQUA.MT. Cached 1 day via Next fetch revalidate.
+// Covers all 54 African countries (ISO map in src/data/africaCountries.js).
 // Returns { [appCountryName]: [{ year, value }] } sorted ascending, or {} on failure
 // (callers fall back to the sourced figures in institutions.js).
-
-const ISO_TO_NAME = { SEN: 'Sénégal', CIV: "Côte d'Ivoire", CMR: 'Cameroun' };
+import { ISO_TO_NAME } from '../data/africaCountries';
 
 export async function getAquacultureProduction() {
   try {
+    const codes = Object.keys(ISO_TO_NAME).join(';');
     const url =
-      'https://api.worldbank.org/v2/country/SEN;CIV;CMR/indicator/ER.FSH.AQUA.MT' +
-      '?format=json&per_page=500';
+      `https://api.worldbank.org/v2/country/${codes}/indicator/ER.FSH.AQUA.MT` +
+      '?format=json&per_page=20000';
     const res = await fetch(url, { next: { revalidate: 86400 } });
     if (!res.ok) return {};
     const json = await res.json();

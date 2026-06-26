@@ -38,6 +38,42 @@ npm run dev
    where id = (select id from auth.users where email = 'you@example.com');
    ```
 
+## 3b. (Optional) Supplier discovery — Google Places API
+
+The admin-only **Discover suppliers** panel on `/suppliers` queries Google Places
+(New) through a server-side proxy (`/api/suppliers/discover`). Results are tagged
+*unverified* and are never auto-added to the curated directory.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services**,
+   enable **Places API (New)**.
+2. Create an **API key**, restrict it to *Places API (New)* only, and set a billing
+   **budget cap / alert** (Places is paid per request).
+3. Add it to `.env.local` (and Vercel) as a **server-only** var — no `NEXT_PUBLIC_` prefix:
+   ```bash
+   GOOGLE_PLACES_API_KEY=your-key
+   ```
+   Leave it blank to keep the feature inert. The panel only shows to `admin` agents,
+   but the route itself is currently unauthenticated — the key restriction + budget
+   cap are what bound cost/abuse.
+
+## 3c. (Optional) Map aquaculture sites — precompute via Google Places
+
+The public map plots fish-farming / aquaculture sites across Africa. These are
+**precomputed once** into the `aquaculture_sites` table (created by `schema.sql`)
+and the map reads from the DB — so there is **$0 Places cost per visitor**.
+
+1. Ensure `schema.sql` has been run (it creates `aquaculture_sites`, public-read).
+2. Populate it (needs `GOOGLE_PLACES_API_KEY` + `SUPABASE_SERVICE_ROLE_KEY` in
+   `.env.local`):
+   ```bash
+   npm run sites:populate
+   ```
+   This sweeps the continent (adaptive tile subdivision) and upserts the results.
+   One sweep makes a few thousand Places calls (~$100–200 of Text Search; covered
+   by Google's monthly free credit for an occasional refresh). Re-run to refresh,
+   or wire it to a weekly cron. Tune depth/cost with `SITES_MAX_CALLS` /
+   `SITES_MAX_DEPTH` env vars.
+
 ## 4. Deploy to Vercel
 
 1. Push this repo to GitHub (already at `josuekongolo/aquamap-africa`).

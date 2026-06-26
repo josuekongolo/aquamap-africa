@@ -214,3 +214,62 @@ end $$;
 alter table public.operators replica identity full;
 alter table public.logs      replica identity full;
 alter table public.events    replica identity full;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 8. Aquaculture sites (precomputed Google Places cache for the public map).
+--    NOT user-owned reference data: populated by scripts/populate-aquaculture-sites.mjs
+--    (service role, bypasses RLS). Everyone may read; nobody writes via anon/auth.
+create table if not exists public.aquaculture_sites (
+  id          text primary key,           -- Google place id
+  name        text not null,
+  address     text,
+  phone       text,
+  website     text,
+  lat         double precision,
+  lng         double precision,
+  type        text,
+  maps_uri    text,
+  source      text not null default 'google_places',
+  updated_at  timestamptz not null default now()
+);
+alter table public.aquaculture_sites enable row level security;
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'aquaculture_sites' and policyname = 'aquaculture_sites_public_read'
+  ) then
+    create policy aquaculture_sites_public_read on public.aquaculture_sites
+      for select using (true);  -- public map data; no write policy => only service role writes
+  end if;
+end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 9. Equipment suppliers (precomputed Google Places cache for /suppliers, Africa-wide).
+--    Like aquaculture_sites but with a `category` (feed/fingerling/ras/aeration/water).
+--    Populated by scripts/populate-equipment-suppliers.mjs (service role). Public read.
+create table if not exists public.equipment_suppliers (
+  id          text primary key,           -- Google place id
+  name        text not null,
+  category    text not null,              -- feed | fingerling | ras | aeration | water
+  address     text,
+  phone       text,
+  website     text,
+  lat         double precision,
+  lng         double precision,
+  type        text,
+  maps_uri    text,
+  source      text not null default 'google_places',
+  updated_at  timestamptz not null default now()
+);
+alter table public.equipment_suppliers enable row level security;
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'equipment_suppliers' and policyname = 'equipment_suppliers_public_read'
+  ) then
+    create policy equipment_suppliers_public_read on public.equipment_suppliers
+      for select using (true);
+  end if;
+end $$;

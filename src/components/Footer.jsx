@@ -1,6 +1,5 @@
 'use client';
 
-import LogoMark from './LogoMark';
 import Link from 'next/link';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,9 +31,9 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
         {/* Brand */}
         <div className="lg:col-span-2">
-          <Link href="/" className="flex items-center gap-2 mb-3">
-            <LogoMark className="w-7 h-7" style={{ color: 'var(--brand)' }} />
-            <span className="font-display font-bold text-lg" style={{ color: '#000' }}>AQAFRIKA</span>
+          <Link href="/" className="inline-flex items-center mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- static brand lockup; next/image optimization is unnecessary */}
+            <img src="/img/logo-full.png" alt="AQAFRIKA" className="h-9 w-auto object-contain" />
           </Link>
           <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
             {fr
