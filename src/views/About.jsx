@@ -43,16 +43,40 @@ export default function About() {
     },
   ];
 
+  const skills = [
+    {
+      title: fr ? 'Aquaculture' : 'Aquaculture',
+      items: fr
+        ? ['Opérations en ferme', 'Santé & bien-être', 'Technologie aquacole', 'FCR & croissance', 'Cadre réglementaire', 'Systèmes RAS / à terre']
+        : ['Farm operations', 'Fish health & welfare', 'Aquaculture technology', 'FCR & growth', 'Regulatory framework', 'RAS / land-based systems'],
+    },
+    {
+      title: fr ? 'Données & ingénierie' : 'Data & engineering',
+      items: ['Python', fr ? 'Statistiques' : 'Statistics', fr ? 'Apprentissage automatique' : 'Machine learning', fr ? 'Analyse de données' : 'Data analysis', fr ? 'Vision par caméra' : 'Camera/vision data'],
+    },
+    {
+      title: fr ? 'Numérique & produit' : 'Digital & product',
+      items: ['SEO', 'Google / Meta / TikTok Ads', fr ? 'Email marketing' : 'Email marketing', fr ? 'Développement web' : 'Web development', fr ? 'Création de produits' : 'Product building'],
+    },
+    {
+      title: fr ? 'Autres' : 'Other',
+      items: [fr ? 'HACCP & sécurité alimentaire' : 'HACCP & food safety', fr ? 'Leadership' : 'Leadership', fr ? 'Relation client' : 'Customer relations'],
+    },
+    {
+      title: fr ? 'Langues' : 'Languages',
+      items: [fr ? 'Norvégien' : 'Norwegian', fr ? 'Anglais' : 'English', fr ? 'Français' : 'French', 'Lingala', 'Tshiluba'],
+    },
+  ];
+
   return (
     <div className="bg-white">
       {/* Intro band */}
       <section className="relative isolate overflow-hidden" style={{ backgroundColor: 'var(--ink)' }}>
         <div className="noise" />
         <div className="relative max-w-5xl mx-auto px-6 py-20 sm:py-24 flex flex-col sm:flex-row items-center gap-8">
-          <div className="shrink-0 flex size-28 items-center justify-center rounded-full font-display text-3xl font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-2))' }}>
-            IJK
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- founder portrait */}
+          <img src="/img/josue.jpg" alt="Ilunga Josué Kongolo"
+            className="shrink-0 size-32 rounded-full object-cover ring-4 ring-white/15 shadow-xl" />
           <div className="text-center sm:text-left">
             <p className="font-mono2 text-[11px] uppercase tracking-[0.22em] text-[#7fd4be] mb-2">{fr ? 'À propos' : 'About'}</p>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight">Ilunga Josué Kongolo</h1>
@@ -88,8 +112,8 @@ export default function About() {
             <div className="space-y-4 text-[15px] leading-relaxed text-gray-600">
               <p>
                 {fr
-                  ? "Je termine un master d'ingénieur en aquaculture à l'Université de Bergen, au cœur de l'industrie norvégienne — l'une des plus avancées au monde. Depuis trois ans, je travaille chez Stingray Marine Solutions, où je pilote à distance des systèmes de dépouillage au laser et suis chaque jour la santé, la croissance et le bien-être des poissons sur des fermes commerciales le long de la côte norvégienne."
-                  : 'I am finishing a master’s in aquaculture engineering at the University of Bergen, in the heart of the Norwegian industry — one of the most advanced in the world. For the past three years I have worked at Stingray Marine Solutions, remotely operating laser-delousing systems and following fish health, growth and welfare every day on commercial farms along the Norwegian coast.'}
+                  ? "Ingénieur en aquaculture formé à l'Université de Bergen, au cœur de l'industrie norvégienne — l'une des plus avancées au monde. Depuis trois ans, je travaille chez Stingray Marine Solutions, où je pilote à distance des systèmes de dépouillage au laser et suis chaque jour la santé, la croissance et le bien-être des poissons sur des fermes salmonicoles commerciales le long de la côte norvégienne."
+                  : 'An aquaculture engineer trained at the University of Bergen — at the heart of the Norwegian industry, one of the most advanced in the world. For the past three years I have worked at Stingray Marine Solutions, remotely operating laser-delousing systems and following fish health, growth and welfare every day on commercial salmon farms along the Norwegian coast.'}
               </p>
               <p>
                 {fr
@@ -101,6 +125,25 @@ export default function About() {
                   ? "Ce mélange — ingénierie aquacole, données, et expérience concrète du produit numérique — est exactement ce que j'ai voulu réunir dans AQAFRIKA."
                   : 'That mix — aquaculture engineering, data, and hands-on digital-product experience — is exactly what I wanted to bring together in AQAFRIKA.'}
               </p>
+            </div>
+          </section>
+        </Reveal>
+
+        {/* Skills */}
+        <Reveal>
+          <section className="space-y-4">
+            <h2 className="font-display text-2xl font-bold text-black">{fr ? 'Compétences' : 'Skills'}</h2>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
+              {skills.map((g) => (
+                <div key={g.title}>
+                  <h3 className="font-mono2 text-[11px] uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--brand)' }}>{g.title}</h3>
+                  <div className="flex flex-wrap gap-1.5">
+                    {g.items.map((s) => (
+                      <span key={s} className="text-sm rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-gray-700">{s}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         </Reveal>
