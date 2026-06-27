@@ -1,180 +1,105 @@
 'use client';
 
 import Link from 'next/link';
-import { GraduationCap, Fish, LineChart, Globe2, Mail, ArrowRight } from 'lucide-react';
+import { Mail, ArrowRight } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import Reveal from '../components/Reveal';
 
-// About the founder — grounded in his CV (University of Bergen aquaculture engineer,
-// Stingray Marine Solutions, thesis on camera/ML salmon monitoring, Aminor, and a
-// founder/digital-marketing background). No invented claims.
+// An editorial "about the founder" page — narrative prose presenting Ilunga Josué
+// Kongolo and the motivation behind AQAFRIKA. Grounded in his CV (no invented claims),
+// written to introduce the person, not to list a résumé.
 export default function About() {
   const { lang } = useLang();
   const fr = lang === 'fr';
-
-  const highlights = [
-    {
-      Icon: GraduationCap,
-      title: fr ? 'Ingénieur en aquaculture (UiB)' : 'Aquaculture engineer (UiB)',
-      body: fr
-        ? "Master en génie aquacole (sivilingeniør i havbruk) à l'Université de Bergen — biologie, santé, génétique et conception des systèmes d'élevage."
-        : 'MSc in Aquaculture Engineering (sivilingeniør i havbruk) at the University of Bergen — fish biology, health, genetics and the design of farming systems.',
-    },
-    {
-      Icon: Fish,
-      title: fr ? '3 ans sur les fermes salmonicoles' : '3 years on salmon farms',
-      body: fr
-        ? "Opérateur laser chez Stingray Marine Solutions : pilotage à distance du dépouillage laser et suivi quotidien de la santé et de la croissance des poissons en cage."
-        : 'Laser operator at Stingray Marine Solutions: remotely running laser delousing and following fish health and growth daily across commercial sea cages.',
-    },
-    {
-      Icon: LineChart,
-      title: fr ? 'Données & apprentissage automatique' : 'Data & machine learning',
-      body: fr
-        ? "Thèse (avec Stingray) sur le suivi par caméra du comportement du saumon, combinant modèle océanique, météo et apprentissage automatique."
-        : 'Thesis (with Stingray) on camera-based monitoring of salmon behaviour, combining ocean-model and weather data with machine learning.',
-    },
-    {
-      Icon: Globe2,
-      title: fr ? 'Entrepreneur & multilingue' : 'Founder & multilingual',
-      body: fr
-        ? "Fondateur de plusieurs entreprises (web, SEO, marketing digital). Parle norvégien, anglais, français, lingala et tshiluba."
-        : 'Founder of several companies (web, SEO, digital marketing). Speaks Norwegian, English, French, Lingala and Tshiluba.',
-    },
-  ];
-
-  const skills = [
-    {
-      title: fr ? 'Aquaculture' : 'Aquaculture',
-      items: fr
-        ? ['Opérations en ferme', 'Santé & bien-être', 'Technologie aquacole', 'FCR & croissance', 'Cadre réglementaire', 'Systèmes RAS / à terre']
-        : ['Farm operations', 'Fish health & welfare', 'Aquaculture technology', 'FCR & growth', 'Regulatory framework', 'RAS / land-based systems'],
-    },
-    {
-      title: fr ? 'Données & ingénierie' : 'Data & engineering',
-      items: ['Python', fr ? 'Statistiques' : 'Statistics', fr ? 'Apprentissage automatique' : 'Machine learning', fr ? 'Analyse de données' : 'Data analysis', fr ? 'Vision par caméra' : 'Camera/vision data'],
-    },
-    {
-      title: fr ? 'Numérique & produit' : 'Digital & product',
-      items: ['SEO', 'Google / Meta / TikTok Ads', fr ? 'Email marketing' : 'Email marketing', fr ? 'Développement web' : 'Web development', fr ? 'Création de produits' : 'Product building'],
-    },
-    {
-      title: fr ? 'Autres' : 'Other',
-      items: [fr ? 'HACCP & sécurité alimentaire' : 'HACCP & food safety', fr ? 'Leadership' : 'Leadership', fr ? 'Relation client' : 'Customer relations'],
-    },
-    {
-      title: fr ? 'Langues' : 'Languages',
-      items: [fr ? 'Norvégien' : 'Norwegian', fr ? 'Anglais' : 'English', fr ? 'Français' : 'French', 'Lingala', 'Tshiluba'],
-    },
-  ];
 
   return (
     <div className="bg-white">
       {/* Intro band */}
       <section className="relative isolate overflow-hidden" style={{ backgroundColor: 'var(--ink)' }}>
         <div className="noise" />
-        <div className="relative max-w-5xl mx-auto px-6 py-20 sm:py-24 flex flex-col sm:flex-row items-center gap-8">
+        <div className="relative max-w-4xl mx-auto px-6 py-20 sm:py-24 flex flex-col sm:flex-row items-center gap-8 sm:gap-10">
           {/* eslint-disable-next-line @next/next/no-img-element -- founder portrait */}
           <img src="/img/josue.jpg" alt="Ilunga Josué Kongolo"
-            className="shrink-0 size-32 rounded-full object-cover ring-4 ring-white/15 shadow-xl" />
+            className="shrink-0 size-36 sm:size-40 rounded-full object-cover ring-4 ring-white/15 shadow-xl" />
           <div className="text-center sm:text-left">
-            <p className="font-mono2 text-[11px] uppercase tracking-[0.22em] text-[#7fd4be] mb-2">{fr ? 'À propos' : 'About'}</p>
+            <p className="font-mono2 text-[11px] uppercase tracking-[0.22em] text-[#7fd4be] mb-2">{fr ? 'Le fondateur' : 'The founder'}</p>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-white leading-tight">Ilunga Josué Kongolo</h1>
-            <p className="text-white/70 mt-2 max-w-2xl">
+            <p className="text-white/75 mt-3 max-w-xl leading-relaxed">
               {fr
-                ? "Ingénieur en aquaculture (Université de Bergen) et fondateur d'AQAFRIKA — pour mettre les outils de l'aquaculture moderne au service des pisciculteurs africains."
-                : 'Aquaculture engineer (University of Bergen) and founder of AQAFRIKA — bringing the tools of modern aquaculture to African fish farmers.'}
+                ? "Ingénieur en aquaculture, façonné par l'une des filières piscicoles les plus avancées au monde — et déterminé à en partager les outils avec les pisciculteurs africains."
+                : 'An aquaculture engineer shaped by one of the most advanced fish-farming industries in the world — set on sharing its tools with African fish farmers.'}
             </p>
           </div>
         </div>
       </section>
 
-      <div className="max-w-5xl mx-auto px-6 py-14 sm:py-16 space-y-14">
-        {/* Highlights */}
-        <div className="grid sm:grid-cols-2 gap-4">
-          {highlights.map((h, i) => (
-            <Reveal key={i} delay={i * 70}>
-              <div className="h-full rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <span className="flex size-9 items-center justify-center rounded-lg mb-3" style={{ backgroundColor: '#0D6B8A14', color: 'var(--brand)' }}>
-                  <h.Icon className="size-5" />
-                </span>
-                <h3 className="font-semibold text-black">{h.title}</h3>
-                <p className="text-sm text-gray-500 mt-1 leading-relaxed">{h.body}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        {/* Background story */}
-        <Reveal>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold text-black">{fr ? 'Mon parcours' : 'My background'}</h2>
-            <div className="space-y-4 text-[15px] leading-relaxed text-gray-600">
-              <p>
-                {fr
-                  ? "Ingénieur en aquaculture formé à l'Université de Bergen, au cœur de l'industrie norvégienne — l'une des plus avancées au monde. Depuis trois ans, je travaille chez Stingray Marine Solutions, où je pilote à distance des systèmes de dépouillage au laser et suis chaque jour la santé, la croissance et le bien-être des poissons sur des fermes salmonicoles commerciales le long de la côte norvégienne."
-                  : 'An aquaculture engineer trained at the University of Bergen — at the heart of the Norwegian industry, one of the most advanced in the world. For the past three years I have worked at Stingray Marine Solutions, remotely operating laser-delousing systems and following fish health, growth and welfare every day on commercial salmon farms along the Norwegian coast.'}
-              </p>
-              <p>
-                {fr
-                  ? "Ma thèse, menée avec Stingray, combine des données de caméras stéréo de six sites avec des modèles océaniques et météo et de l'apprentissage automatique pour expliquer le comportement du saumon en cage. J'ai aussi travaillé sur la production à terre du loup tacheté chez Aminor, et j'ai fondé et dirigé plusieurs entreprises — développement web, SEO et marketing digital — touchant des centaines de milliers d'utilisateurs."
-                  : 'My thesis, done with Stingray, combines stereo-camera data from six sites with ocean-model and weather data and machine learning to explain salmon behaviour in the pens. I have also worked on land-based production of spotted wolffish at Aminor, and founded and run several companies — web development, SEO and digital marketing — reaching hundreds of thousands of users.'}
-              </p>
-              <p>
-                {fr
-                  ? "Ce mélange — ingénierie aquacole, données, et expérience concrète du produit numérique — est exactement ce que j'ai voulu réunir dans AQAFRIKA."
-                  : 'That mix — aquaculture engineering, data, and hands-on digital-product experience — is exactly what I wanted to bring together in AQAFRIKA.'}
-              </p>
-            </div>
-          </section>
+      {/* Narrative */}
+      <article className="max-w-2xl mx-auto px-6 py-14 sm:py-16 space-y-6 text-[16px] leading-[1.75] text-gray-700">
+        <Reveal as="p" className="text-xl leading-relaxed text-black font-medium">
+          {fr
+            ? "Je m'appelle Josué. J'ai passé ces dernières années au cœur de l'aquaculture norvégienne, et j'ai construit AQAFRIKA pour mettre ce même savoir-faire à portée des pisciculteurs africains."
+            : "I'm Josué. I've spent the last few years inside the Norwegian aquaculture industry, and I built AQAFRIKA to put that same know-how within reach of African fish farmers."}
         </Reveal>
 
-        {/* Skills */}
-        <Reveal>
-          <section className="space-y-4">
-            <h2 className="font-display text-2xl font-bold text-black">{fr ? 'Compétences' : 'Skills'}</h2>
-            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-5">
-              {skills.map((g) => (
-                <div key={g.title}>
-                  <h3 className="font-mono2 text-[11px] uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--brand)' }}>{g.title}</h3>
-                  <div className="flex flex-wrap gap-1.5">
-                    {g.items.map((s) => (
-                      <span key={s} className="text-sm rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-gray-700">{s}</span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+        <Reveal as="p">
+          {fr
+            ? "Ingénieur en aquaculture formé à l'Université de Bergen, je travaille chez Stingray Marine Solutions, où je pilote à distance des systèmes de dépouillage au laser et suis chaque jour la santé, la croissance et le bien-être du saumon sur des fermes commerciales le long de la côte norvégienne. C'est là que j'ai appris où la technologie, la biologie du poisson et l'économie réelle d'une ferme se rencontrent vraiment — non pas en théorie, mais dans le rythme quotidien de l'alimentation, de l'échantillonnage et du soin aux animaux."
+            : 'Trained as an aquaculture engineer at the University of Bergen, I work at Stingray Marine Solutions, where I run laser-based delousing remotely and follow the health, growth and welfare of salmon every day on commercial farms along the Norwegian coast. That is where I learned where technology, fish biology and the hard economics of a farm actually meet — not in theory, but in the daily rhythm of feeding, sampling and keeping animals healthy.'}
         </Reveal>
 
-        {/* Why */}
-        <Reveal>
-          <section className="rounded-2xl border border-gray-100 bg-gradient-to-b from-primary/5 to-white p-6 sm:p-8 space-y-4">
-            <h2 className="font-display text-2xl font-bold text-black">{fr ? 'Pourquoi AQAFRIKA' : 'Why AQAFRIKA'}</h2>
-            <div className="space-y-4 text-[15px] leading-relaxed text-gray-600">
-              <p>
-                {fr
-                  ? "L'aquaculture est l'une des voies les plus prometteuses pour la sécurité alimentaire et l'emploi en Afrique. Mais les petits pisciculteurs manquent souvent d'outils simples, de données fiables et de liens avec les fournisseurs — alors que la Norvège a montré ce qu'une filière outillée par la donnée peut accomplir."
-                  : 'Aquaculture is one of the most promising paths to food security and jobs in Africa. Yet smallholder farmers often lack simple tools, reliable data and links to suppliers — while Norway has shown what a data-driven sector can achieve.'}
-              </p>
-              <p>
-                {fr
-                  ? "Parlant français, lingala et tshiluba, et formé à l'aquaculture norvégienne, j'ai voulu faire le pont : un outil gratuit où les agents et pisciculteurs enregistrent leurs exploitations, calculent un FCR adapté à l'espèce, accèdent à des ressources FAO/WorldFish vérifiées, trouvent des fournisseurs et suivent le secteur — d'abord en Afrique francophone, désormais à l'échelle du continent."
-                  : 'Speaking French, Lingala and Tshiluba, and trained in Norwegian aquaculture, I wanted to bridge the two: a free tool where agents and farmers register operations, compute a species-aware FCR, reach verified FAO/WorldFish knowledge, find suppliers and track the sector — starting in francophone Africa and now across the continent.'}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <Link href="/register" className="inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition" style={{ backgroundColor: 'var(--brand)' }}>
-                {fr ? 'Enregistrer un opérateur' : 'Register an operator'} <ArrowRight className="size-4" />
-              </Link>
-              <a href="mailto:i.josuekongolo@gmail.com" className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
-                <Mail className="size-4" /> {fr ? 'Me contacter' : 'Get in touch'}
-              </a>
-            </div>
-          </section>
+        <Reveal as="p">
+          {fr
+            ? "Mon travail vit de plus en plus dans la donnée. Pour ma thèse, j'ai combiné des images de caméras stéréo de six fermes avec des modèles océaniques et météorologiques, en utilisant l'apprentissage automatique pour comprendre comment l'environnement façonne le comportement des poissons — et proposer un indicateur de bien-être basé sur la caméra. J'ai aussi travaillé sur le terrain chez Aminor, seule ferme commerciale à terre au monde pour le loup tacheté, où j'ai appris toute la chaîne, des géniteurs au poisson prêt pour le marché."
+            : 'My work increasingly lives in data. For my thesis I combined stereo-camera footage from six farms with ocean-model and weather data, using machine learning to read how the environment shapes fish behaviour — and to propose a camera-based welfare indicator. I have also stood on the production floor at Aminor, the world’s only commercial land-based farm for spotted wolffish, learning the chain from broodstock to market-ready fish.'}
         </Reveal>
-      </div>
+
+        <Reveal as="p">
+          {fr
+            ? "À côté de la science, je construis. J'ai fondé et dirigé mes propres entreprises et mené le marketing digital et le développement web pour d'autres — des produits utilisés par des centaines de milliers de personnes. J'aime livrer des outils simples, utiles, et réellement adoptés."
+            : 'Alongside the science, I build. I have founded and run my own companies and led digital marketing and web development for others — products used by hundreds of thousands of people. I like shipping tools that are simple, useful and actually used.'}
+        </Reveal>
+
+        <Reveal>
+          <figure className="my-8 border-l-2 pl-5" style={{ borderColor: 'var(--brand)' }}>
+            <blockquote className="font-display text-xl sm:text-2xl text-black leading-snug">
+              {fr
+                ? "« La Norvège a montré ce qu'une filière outillée par la donnée peut accomplir. L'Afrique mérite les mêmes outils. »"
+                : '“Norway has shown what a data-driven sector can achieve. Africa deserves the same tools.”'}
+            </blockquote>
+          </figure>
+        </Reveal>
+
+        <Reveal as="h2" className="font-display text-2xl font-bold text-black pt-2">
+          {fr ? 'Pourquoi AQAFRIKA' : 'Why AQAFRIKA'}
+        </Reveal>
+
+        <Reveal as="p">
+          {fr
+            ? "L'aquaculture est l'une des voies les plus claires vers la sécurité alimentaire, le revenu et l'emploi en Afrique. Pourtant, les petits pisciculteurs n'ont presque jamais les outils simples, les données fiables et les liens avec les fournisseurs que l'industrie norvégienne considère comme acquis. Je parle français, lingala et tshiluba, et j'ai toujours voulu combler cet écart."
+            : 'Aquaculture is one of the clearest paths to food security, income and jobs across Africa. Yet smallholder farmers rarely have the simple tools, trustworthy data and supplier connections the Norwegian industry takes for granted. I speak French, Lingala and Tshiluba, and I have always wanted to close that gap.'}
+        </Reveal>
+
+        <Reveal as="p">
+          {fr
+            ? "AQAFRIKA est ma réponse : une plateforme gratuite où agents de vulgarisation et pisciculteurs enregistrent leurs exploitations, calculent un FCR adapté à l'espèce, accèdent à des ressources FAO et WorldFish vérifiées, trouvent de vrais fournisseurs et lisent clairement l'état de leur secteur — pensée d'abord pour l'Afrique francophone, et désormais déployée à l'échelle du continent."
+            : 'AQAFRIKA is my answer: a free platform where extension agents and farmers register their operations, calculate a species-aware FCR, reach verified FAO and WorldFish knowledge, find real suppliers, and see their sector clearly — built for francophone Africa first, and now across the whole continent.'}
+        </Reveal>
+
+        <Reveal as="p" className="text-gray-600">
+          {fr
+            ? "Si tout cela vous parle — comme pisciculteur, organisation ou partenaire — j'aimerais beaucoup échanger avec vous."
+            : "If any of this resonates — as a farmer, an organisation, or a partner — I'd love to hear from you."}
+        </Reveal>
+
+        <Reveal className="flex flex-wrap gap-3 pt-2">
+          <Link href="/register" className="inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition" style={{ backgroundColor: 'var(--brand)' }}>
+            {fr ? 'Enregistrer un opérateur' : 'Register an operator'} <ArrowRight className="size-4" />
+          </Link>
+          <a href="mailto:i.josuekongolo@gmail.com" className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+            <Mail className="size-4" /> {fr ? 'Me contacter' : 'Get in touch'}
+          </a>
+        </Reveal>
+      </article>
     </div>
   );
 }
