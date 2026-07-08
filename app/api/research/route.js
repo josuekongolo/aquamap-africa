@@ -1,10 +1,14 @@
 // Proxy + cache for CrossRef works search (reliable, keyless). Keeps the upstream
 // server-side and caches results for a day. Returns { papers: [...] }.
+import { rateLimit, tooMany } from '@/src/lib/rateLimit';
+
 export const revalidate = 86400;
 
-const MAILTO = 'i.josuekongolo@gmail.com'; // CrossRef "polite pool" contact
+const MAILTO = process.env.CROSSREF_MAILTO || 'contact@aqafrica.com'; // CrossRef "polite pool" contact
 
 export async function GET(request) {
+  const rl = rateLimit(request);
+  if (!rl.ok) return tooMany(rl.retryAfter);
   const q = new URL(request.url).searchParams.get('q') || 'smallholder aquaculture Africa';
   try {
     const url =

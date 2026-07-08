@@ -2,6 +2,7 @@
 // curated list in src/data/suppliers.js is the client-side fallback when this is
 // unconfigured or returns nothing. Search internals live in src/lib/places.js.
 import { searchPlaces, PLACES_COUNTRIES, PLACES_ALL_CODES } from '@/src/lib/places';
+import { rateLimit, tooMany } from '@/src/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,8 @@ const CATEGORY_QUERY = {
 };
 
 export async function GET(request) {
+  const rl = rateLimit(request);
+  if (!rl.ok) return tooMany(rl.retryAfter);
   const params = new URL(request.url).searchParams;
   const category = params.get('category') || 'all';
   const countryParam = (params.get('country') || 'all').toUpperCase();

@@ -95,7 +95,7 @@ export default function About() {
           <Link href="/register" className="inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition" style={{ backgroundColor: 'var(--brand)' }}>
             {fr ? 'Enregistrer un opérateur' : 'Register an operator'} <ArrowRight className="size-4" />
           </Link>
-          <a href="mailto:i.josuekongolo@gmail.com" className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+          <a href="mailto:contact@aqafrica.com" className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
             <Mail className="size-4" /> {fr ? 'Me contacter' : 'Get in touch'}
           </a>
         </Reveal>

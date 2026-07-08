@@ -284,7 +284,7 @@ export default function Suppliers() {
             <p className="text-white/70 text-sm leading-relaxed">{t.suppliers.ctaDesc}</p>
           </div>
           <a
-            href="mailto:i.josuekongolo@gmail.com?subject=AQAFRIKA%20%E2%80%94%20R%C3%A9f%C3%A9rencement%20fournisseur"
+            href="mailto:contact@aqafrica.com?subject=AQAFRIKA%20%E2%80%94%20R%C3%A9f%C3%A9rencement%20fournisseur"
             className="shrink-0 inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-full text-white hover:opacity-90 transition"
             style={{ backgroundColor: 'var(--brand)' }}
           >
