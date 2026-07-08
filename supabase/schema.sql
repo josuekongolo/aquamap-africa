@@ -899,3 +899,36 @@ create policy cycles_org_read on public.cycles for select using (org_id = public
 create policy cycles_org_insert on public.cycles for insert with check (created_by = auth.uid() and public.can_write() and (org_id is null or org_id = public.current_org()));
 create policy cycles_org_update on public.cycles for update using (org_id = public.current_org() and public.can_write());
 create policy cycles_org_delete on public.cycles for delete using (org_id = public.current_org() and public.can_write());
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 14. PHOTOS & DOCUMENTS (Supabase Storage)
+--     Private buckets; access scoped to the uploader's organization via the
+--     first path segment (org_id). Files are stored as {org_id}/{...}. The app
+--     reads them through short-lived signed URLs. Columns hold the object path.
+
+insert into storage.buckets (id, name, public)
+  values ('operator-photos', 'operator-photos', false), ('group-docs', 'group-docs', false)
+  on conflict (id) do nothing;
+
+-- Org-scoped access on both private buckets: a user may read/write objects whose
+-- top folder equals their org_id. can_write() gates uploads/deletes (viewers RO).
+do $$
+declare b text;
+begin
+  foreach b in array array['operator-photos','group-docs'] loop
+    execute format('drop policy if exists %I on storage.objects', b || '_org_read');
+    execute format('drop policy if exists %I on storage.objects', b || '_org_write');
+    execute format('drop policy if exists %I on storage.objects', b || '_org_delete');
+    execute format($p$create policy %I on storage.objects for select using (bucket_id = %L and (storage.foldername(name))[1] = public.current_org()::text)$p$,
+      b || '_org_read', b);
+    execute format($p$create policy %I on storage.objects for insert with check (bucket_id = %L and (storage.foldername(name))[1] = public.current_org()::text and public.can_write())$p$,
+      b || '_org_write', b);
+    execute format($p$create policy %I on storage.objects for delete using (bucket_id = %L and (storage.foldername(name))[1] = public.current_org()::text and public.can_write())$p$,
+      b || '_org_delete', b);
+  end loop;
+end $$;
+
+-- Path columns (nullable; store the object path within the bucket).
+alter table public.operators add column if not exists photo_path      text;
+alter table public.meetings  add column if not exists attachment_path text;
+alter table public.groups    add column if not exists agreement_path  text;

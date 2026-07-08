@@ -9,6 +9,7 @@ import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import OperatorForm from '../components/OperatorForm';
+import PhotoUpload from '../components/PhotoUpload';
 
 // Edit an existing operator (fixes the "registrations are permanent" blocker).
 // Guarded delete lives here too until the operator detail page ships.
@@ -69,10 +70,21 @@ export default function OperatorEdit({ operatorId }) {
         )}
 
         {operator && (
-          <OperatorForm
-            initialOperator={operator}
-            onSaved={() => { toast.success(fr ? 'Modifications enregistrées ✓' : 'Changes saved ✓'); router.push('/dashboard'); }}
-          />
+          <>
+            <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
+              <PhotoUpload bucket="operator-photos" path={operator.photo_path} subdir={operator.id} fr={fr}
+                label={fr ? 'Photo de l’exploitation / opérateur' : 'Farm / operator photo'}
+                onChange={async (p) => {
+                  const { error } = await supabase.from('operators').update({ photo_path: p }).eq('id', operator.id);
+                  if (error) toast.error(error.message);
+                  else { setOperator((o) => ({ ...o, photo_path: p })); toast.success(fr ? 'Photo enregistrée ✓' : 'Photo saved ✓'); }
+                }} />
+            </div>
+            <OperatorForm
+              initialOperator={operator}
+              onSaved={() => { toast.success(fr ? 'Modifications enregistrées ✓' : 'Changes saved ✓'); router.push('/dashboard'); }}
+            />
+          </>
         )}
       </div>
     </div>

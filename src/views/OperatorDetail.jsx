@@ -154,6 +154,16 @@ export default function OperatorDetail({ operatorId }) {
   const dayN = cycleDay(cycle);
   const biomass = biomassEstimate(logs, events, cycle, speciesBenchmarks[speciesKey]);
 
+  const [photoUrl, setPhotoUrl] = useState(null);
+  useEffect(() => {
+    let active = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!operator?.photo_path) { setPhotoUrl(null); return undefined; }
+    supabase.storage.from('operator-photos').createSignedUrl(operator.photo_path, 3600)
+      .then(({ data }) => { if (active) setPhotoUrl(data?.signedUrl || null); });
+    return () => { active = false; };
+  }, [operator?.photo_path]);
+
   const exportCsv = () => {
     if (!operator) return;
     const cols = ['log_date', 'type', 'species', 'feed_kg', 'fingerlings_count', 'avg_weight_g', 'kg_harvested', 'kg_sold', 'price_per_kg', 'note'];
@@ -216,10 +226,16 @@ export default function OperatorDetail({ operatorId }) {
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-1"><ChevronLeft className="size-4" /> {fr ? 'Portefeuille' : 'Portfolio'}</Link>
-          <h1 className="font-display text-3xl font-bold text-black">{operator?.name}</h1>
-          <p className="text-muted-foreground text-sm">{[operator?.region, operator?.country].filter(Boolean).join(', ')}</p>
+        <div className="flex items-center gap-4">
+          {photoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- signed private-bucket URL
+            <img src={photoUrl} alt="" className="size-16 rounded-xl object-cover border shrink-0" />
+          )}
+          <div>
+            <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-1"><ChevronLeft className="size-4" /> {fr ? 'Portefeuille' : 'Portfolio'}</Link>
+            <h1 className="font-display text-3xl font-bold text-black">{operator?.name}</h1>
+            <p className="text-muted-foreground text-sm">{[operator?.region, operator?.country].filter(Boolean).join(', ')}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {cycles.length > 1 && (

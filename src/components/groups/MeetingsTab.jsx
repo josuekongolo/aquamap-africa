@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, RefreshCw, Trash2, CalendarDays, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { enqueue, notifyQueued } from '../../lib/offlineQueue';
+import PhotoUpload from '../PhotoUpload';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const input = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400';
@@ -140,15 +141,14 @@ export default function MeetingsTab({ group, fr, user }) {
             {fr ? 'Aucune réunion consignée.' : 'No meetings recorded.'}
           </CardContent></Card>
         )}
-        {meetings.map((m) => <MeetingRow key={m.id} m={m} fr={fr} onDelete={() => remove(m.id)} />)}
+        {meetings.map((m) => <MeetingRow key={m.id} m={m} fr={fr} onDelete={() => remove(m.id)} onChanged={load} />)}
       </div>
     </div>
   );
 }
 
-function MeetingRow({ m, fr, onDelete }) {
+function MeetingRow({ m, fr, onDelete, onChanged }) {
   const [open, setOpen] = useState(false);
-  const hasBody = m.minutes || m.decisions;
   return (
     <Card>
       <CardContent className="py-3">
@@ -162,14 +162,12 @@ function MeetingRow({ m, fr, onDelete }) {
             {m.women_count != null && m.attendees_count > 0 && <> · {Math.round((100 * m.women_count) / m.attendees_count)}% {fr ? 'femmes' : 'women'}</>}
           </p>
         </div>
-        {hasBody && (
-          <button onClick={() => setOpen((o) => !o)} className="text-gray-400 hover:text-gray-700">
-            <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
-          </button>
-        )}
+        <button onClick={() => setOpen((o) => !o)} className="text-gray-400 hover:text-gray-700" title={fr ? 'Détails / pièce jointe' : 'Details / attachment'}>
+          <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
         <button onClick={onDelete} className="text-gray-300 hover:text-red-600"><Trash2 className="size-4" /></button>
       </div>
-      {open && hasBody && (
+      {open && (
         <div className="mt-3 pt-3 border-t space-y-2 text-sm">
           {m.minutes && (
             <div>
@@ -183,6 +181,14 @@ function MeetingRow({ m, fr, onDelete }) {
               <p className="text-gray-700 whitespace-pre-wrap">{m.decisions}</p>
             </div>
           )}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">{fr ? 'Pièce jointe (PV scanné, photo)' : 'Attachment (scanned minutes, photo)'}</p>
+            <PhotoUpload bucket="group-docs" path={m.attachment_path} subdir={m.group_id} accept="image/*,application/pdf" fr={fr}
+              onChange={async (p) => {
+                const { error } = await supabase.from('meetings').update({ attachment_path: p }).eq('id', m.id);
+                if (!error) onChanged?.();
+              }} />
+          </div>
         </div>
       )}
       </CardContent>

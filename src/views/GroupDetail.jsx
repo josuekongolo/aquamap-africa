@@ -11,6 +11,7 @@ import { ACM_GROUP_TYPES, ACM_MODELS, ACM_DEGREES } from '../data/dacms';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import GroupForm from '../components/groups/GroupForm';
+import PhotoUpload from '../components/PhotoUpload';
 import MembersTab from '../components/groups/MembersTab';
 import PlanTab from '../components/groups/PlanTab';
 import MeetingsTab from '../components/groups/MeetingsTab';
@@ -154,6 +155,16 @@ export default function GroupDetail({ groupId }) {
               onClose={() => setEditing(false)}
               onSaved={() => { setEditing(false); load(); }} />
           )}
+
+          {/* Signed co-management agreement scan (FAO Box 2 legal document) */}
+          <div className="rounded-lg border bg-white px-4 py-3">
+            <PhotoUpload bucket="group-docs" path={group.agreement_path} subdir={group.id} accept="image/*,application/pdf" fr={fr}
+              label={fr ? 'Accord de cogestion signé (scan / photo)' : 'Signed co-management agreement (scan / photo)'}
+              onChange={async (p) => {
+                const { error } = await supabase.from('groups').update({ agreement_path: p }).eq('id', group.id);
+                if (error) setError(error.message); else setGroup((g) => ({ ...g, agreement_path: p }));
+              }} />
+          </div>
 
           <Tabs defaultValue="members">
             <TabsList className="flex-wrap h-auto">
