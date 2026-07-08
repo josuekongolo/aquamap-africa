@@ -485,3 +485,54 @@ $$;
 revoke all on function public.community_overview() from public;
 revoke all on function public.community_overview() from anon;
 grant execute on function public.community_overview() to authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 11. PRE-LAUNCH SECURITY HARDENING
+--     (a) agents cannot self-promote to admin; (b) deleting an agent no longer
+--     cascade-deletes their field data; (c) soft deactivation; (d) farmer
+--     consent capture (privacy compliance).
+
+-- 11a. Block role self-promotion. agents_update_self allows profile edits, but
+--      role changes must come from an admin. Rule: requests carrying an
+--      end-user JWT (auth.uid() not null) may only change role if that user is
+--      an admin. Service-role and SQL-editor sessions have no auth.uid() and
+--      stay able to promote (that's how the first admin is made); anon can't
+--      reach UPDATE at all (RLS agents_update_self requires id = auth.uid()).
+create or replace function public.protect_agent_role()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.role is distinct from old.role
+     and auth.uid() is not null
+     and not public.is_admin() then
+    raise exception 'role changes require an administrator';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists protect_agent_role on public.agents;
+create trigger protect_agent_role
+  before update on public.agents
+  for each row execute function public.protect_agent_role();
+
+-- 11b. Offboarding safety: created_by FKs become RESTRICT so removing an agent
+--      (or their auth.users row, which cascades to agents) cannot silently
+--      destroy operators, logs, events, or DACMS records. Reassign first
+--      (Phase-4 reassign_agent_data), then delete.
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['operators','logs','events','groups','group_members','meetings','plans','plan_indicators','incidents','zones','assessments'] loop
+    execute format('alter table public.%1$s drop constraint if exists %1$s_created_by_fkey', tbl);
+    execute format('alter table public.%1$s add constraint %1$s_created_by_fkey foreign key (created_by) references public.agents (id) on delete restrict', tbl);
+  end loop;
+end $$;
+
+-- 11c. Soft deactivation (offboarding without deletion).
+alter table public.agents add column if not exists active boolean not null default true;
+
+-- 11d. Farmer consent (agent attests informed consent at registration).
+alter table public.operators add column if not exists consent_given boolean;
+alter table public.operators add column if not exists consent_date  date;
