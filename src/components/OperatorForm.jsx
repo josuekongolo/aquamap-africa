@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Waves, Fish, Droplets, Recycle, Wheat, Shrimp, CircleCheck, MapPin, RefreshCw } from 'lucide-react';
+import { Waves, Fish, Droplets, Recycle, Wheat, Shrimp, CircleCheck, MapPin, RefreshCw, Map as MapIcon } from 'lucide-react';
+
+const LocationPicker = dynamic(() => import('./LocationPicker'), { ssr: false, loading: () => <div className="h-56 rounded-lg border bg-gray-100 animate-pulse" /> });
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -54,6 +57,7 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [dupWarning, setDupWarning] = useState('');
+  const [showMap, setShowMap] = useState(false);
   const [form, setForm] = useState(() => initialOperator ? {
     name: initialOperator.name || '',
     phone: initialOperator.phone || '',
@@ -269,6 +273,7 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
                     readOnly
                   />
                   <button
+                    type="button"
                     onClick={captureGps}
                     className="px-4 py-2 rounded-lg text-white text-sm font-medium"
                     style={{ backgroundColor: '#0D6B8A' }}
@@ -279,6 +284,16 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
                       : <span className="inline-flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {t.register.gpsBtn}</span>}
                   </button>
                 </div>
+                <button type="button" onClick={() => setShowMap((s) => !s)}
+                  className="mt-2 text-xs font-medium inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--brand)' }}>
+                  <MapIcon className="w-3.5 h-3.5" /> {showMap ? (lang === 'fr' ? 'Masquer la carte' : 'Hide map') : (lang === 'fr' ? 'Placer sur la carte' : 'Place on map')}
+                </button>
+                {showMap && (
+                  <div className="mt-2">
+                    <LocationPicker lat={form.lat} lng={form.lng} onPick={([lo, la]) => setForm((f) => ({ ...f, lat: la, lng: lo, gps: `${la.toFixed(4)}, ${lo.toFixed(4)}` }))} />
+                    <p className="mt-1 text-[11px] text-gray-400">{lang === 'fr' ? 'Touchez la carte pour placer le repère (ou glissez-le).' : 'Tap the map to drop the pin (or drag it).'}</p>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

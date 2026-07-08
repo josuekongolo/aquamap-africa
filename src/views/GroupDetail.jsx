@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, MapPin, BadgeCheck, ChevronLeft, Trash2, AlertTriangle, Pencil, Download } from 'lucide-react';
+import { Users, MapPin, BadgeCheck, ChevronLeft, Trash2, AlertTriangle, Pencil, Download, FileText } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -133,9 +133,13 @@ export default function GroupDetail({ groupId }) {
               {group.description && <p className="text-sm text-gray-600 mt-3 max-w-2xl">{group.description}</p>}
             </div>{/* header text block */}
             <div className="flex items-center gap-2 self-start shrink-0">
+              <Link href={`/groups/${groupId}/report`}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50">
+                <FileText className="size-4" /> {fr ? 'Rapport' : 'Report'}
+              </Link>
               <button onClick={exportGroupCsv}
                 className="inline-flex items-center gap-1.5 text-sm text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50">
-                <Download className="size-4" /> {fr ? 'Rapport CSV' : 'CSV report'}
+                <Download className="size-4" /> CSV
               </button>
               <button onClick={() => setEditing(true)}
                 className="inline-flex items-center gap-1.5 text-sm text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50">

@@ -297,3 +297,10 @@ body {
     @apply font-sans;
   }
 }
+/* Print: hide global chrome so /groups/[id]/report and CSV/print deliverables
+   render clean (donor/FAO PDFs via the browser's Print → Save as PDF). */
+@media print {
+  nav, footer, .no-print { display: none !important; }
+  body { background: #fff !important; }
+  main { padding: 0 !important; }
+}

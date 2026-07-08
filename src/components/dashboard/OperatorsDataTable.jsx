@@ -3,9 +3,9 @@
 
 import * as React from 'react';
 import {
-  flexRender, getCoreRowModel, getSortedRowModel, getPaginationRowModel, useReactTable,
+  flexRender, getCoreRowModel, getSortedRowModel, getPaginationRowModel, getFilteredRowModel, useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronLeft, ChevronRight, Columns3, Download } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, Columns3, Download, Search } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ const SPECIES_KEY = { tilapia: 'Tilapia', silure: 'Silure', crevette: 'Crevette'
 export function OperatorsDataTable({ operators, t, lang, onExport }) {
   const [sorting, setSorting] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
+  const [globalFilter, setGlobalFilter] = React.useState('');
 
   const sortBtn = (column, label) => (
     <Button variant="ghost" className="-ml-3 h-8" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
@@ -70,15 +71,25 @@ export function OperatorsDataTable({ operators, t, lang, onExport }) {
 
   const table = useReactTable({
     data: operators, columns,
-    state: { sorting, columnVisibility },
-    onSortingChange: setSorting, onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(),
+    state: { sorting, columnVisibility, globalFilter },
+    onSortingChange: setSorting, onColumnVisibilityChange: setColumnVisibility, onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _colId, value) => {
+      const o = row.original;
+      return `${o.name} ${o.phone || ''} ${o.country || ''} ${o.region || ''} ${(o.species || []).join(' ')}`.toLowerCase().includes(String(value).toLowerCase());
+    },
+    getCoreRowModel: getCoreRowModel(), getSortedRowModel: getSortedRowModel(), getPaginationRowModel: getPaginationRowModel(), getFilteredRowModel: getFilteredRowModel(),
     initialState: { pagination: { pageSize: 8 } },
   });
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2">
+        <div className="relative w-full max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+          <input value={globalFilter} onChange={(e) => setGlobalFilter(e.target.value)}
+            placeholder={lang === 'fr' ? 'Rechercher…' : 'Search…'}
+            className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400" />
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm"><Columns3 className="size-4" /> Colonnes</Button>

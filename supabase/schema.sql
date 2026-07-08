@@ -932,3 +932,48 @@ end $$;
 alter table public.operators add column if not exists photo_path      text;
 alter table public.meetings  add column if not exists attachment_path text;
 alter table public.groups    add column if not exists agreement_path  text;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 15. NETWORK BENCHMARKING (anonymized, threshold-guarded)
+--     Per-species network-wide median FCR across ALL organizations, exposed only
+--     when at least MIN_N operators contribute (below that, a median is noise —
+--     the audit critic's caution). Security definer; authenticated only; returns
+--     aggregates only (no row-level data, no org identity).
+create or replace function public.species_fcr_benchmark()
+returns jsonb
+language sql
+security definer set search_path = public
+stable
+as $$
+  with per_op as (
+    -- One FCR per operator's latest cycle (species from the latest stocking).
+    select o.id as operator_id,
+           ls.species,
+           sum(l.feed_kg) filter (where l.type = 'feed') as feed,
+           coalesce(sum(l.kg_harvested) filter (where l.type = 'harvest'), 0)
+             - coalesce(sum((l.fingerlings_count * l.avg_weight_g) / 1000.0) filter (where l.type = 'stocking'), 0) as gain
+    from operators o
+    join lateral (
+      select species, log_date from logs
+      where operator_id = o.id and type = 'stocking' order by log_date desc limit 1
+    ) ls on true
+    join logs l on l.operator_id = o.id and l.log_date >= ls.log_date
+    group by o.id, ls.species
+  ),
+  fcrs as (
+    select species, feed / nullif(gain, 0) as fcr from per_op
+    where feed > 0 and gain > 0
+  ),
+  by_species as (
+    select species,
+           count(*) as n,
+           percentile_cont(0.5) within group (order by fcr) as median_fcr
+    from fcrs group by species
+  )
+  select case when auth.uid() is null then null else coalesce(
+    jsonb_object_agg(species, jsonb_build_object('n', n, 'median_fcr', round(median_fcr::numeric, 2)))
+      filter (where n >= 5), '{}'::jsonb) end
+  from by_species;
+$$;
+revoke all on function public.species_fcr_benchmark() from public, anon;
+grant execute on function public.species_fcr_benchmark() to authenticated;

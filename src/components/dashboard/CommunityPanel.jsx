@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Globe2, Users, CalendarDays, Scale } from 'lucide-react';
+import { Globe2, Users, CalendarDays, Scale, Gauge } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
@@ -12,16 +12,21 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 // the community_overview() RPC — counts and sums only, never row-level data.
 export default function CommunityPanel({ fr }) {
   const [data, setData] = useState(null);
+  const [bench, setBench] = useState(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let active = true;
     (async () => {
-      const { data, error } = await supabase.rpc('community_overview');
+      const [overview, benchmark] = await Promise.all([
+        supabase.rpc('community_overview'),
+        supabase.rpc('species_fcr_benchmark'),
+      ]);
       if (!active) return;
-      if (error || !data) setFailed(true);
-      else setData(data);
+      if (overview.error || !overview.data) setFailed(true);
+      else setData(overview.data);
+      if (!benchmark.error && benchmark.data && Object.keys(benchmark.data).length) setBench(benchmark.data);
     })();
     return () => { active = false; };
   }, []);
@@ -97,6 +102,25 @@ export default function CommunityPanel({ fr }) {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {bench && (
+          <div className="rounded-lg border">
+            <div className="px-4 py-2.5 border-b flex items-center gap-2">
+              <Gauge className="size-4" style={{ color: 'var(--brand)' }} />
+              <span className="text-sm font-medium">{fr ? 'FCR médian du réseau par espèce' : 'Network median FCR by species'}</span>
+              <span className="text-xs text-muted-foreground">{fr ? '(≥ 5 opérateurs)' : '(≥ 5 operators)'}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x">
+              {Object.entries(bench).map(([sp, v]) => (
+                <div key={sp} className="px-4 py-3">
+                  <p className="text-xs text-muted-foreground">{sp}</p>
+                  <p className="text-lg font-semibold tabular-nums">{v.median_fcr}</p>
+                  <p className="text-[11px] text-muted-foreground">n={v.n}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
