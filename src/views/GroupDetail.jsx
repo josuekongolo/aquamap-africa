@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, MapPin, BadgeCheck, ChevronLeft, Trash2, AlertTriangle, Pencil } from 'lucide-react';
+import { Users, MapPin, BadgeCheck, ChevronLeft, Trash2, AlertTriangle, Pencil, Download } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -46,6 +46,34 @@ export default function GroupDetail({ groupId }) {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
+
+  // Donor M&E export: one CSV bundling the DACMS assessment, plan indicators,
+  // meetings and conflict register for this group (the data DACMS exists to feed).
+  async function exportGroupCsv() {
+    const [{ data: inds }, { data: mtgs }, { data: incs }, { data: asmts }] = await Promise.all([
+      supabase.from('plan_indicators').select('name, category, unit, baseline, target, current, plans!inner(group_id)').eq('plans.group_id', groupId),
+      supabase.from('meetings').select('meeting_date, title, attendees_count, women_count, decisions').eq('group_id', groupId).order('meeting_date'),
+      supabase.from('incidents').select('incident_date, kind, conflict_type, status, sanction, resolution').eq('group_id', groupId).order('incident_date'),
+      supabase.from('assessments').select('criterion_id, score, assessed_on').eq('group_id', groupId).order('criterion_id'),
+    ]);
+    const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const section = (title, cols, rows) => [
+      title, cols.join(','),
+      ...(rows || []).map((r) => cols.map((c) => esc(r[c])).join(',')), '',
+    ].join('\n');
+    const csv = '﻿' + [
+      `AQAFRIKA — ${fr ? 'Rapport de cogestion' : 'Co-management report'}: ${group.name}`, '',
+      section(fr ? 'INDICATEURS' : 'INDICATORS', ['name', 'category', 'unit', 'baseline', 'target', 'current'], inds),
+      section(fr ? 'REUNIONS' : 'MEETINGS', ['meeting_date', 'title', 'attendees_count', 'women_count', 'decisions'], mtgs),
+      section(fr ? 'CONFLITS & CONFORMITE' : 'CONFLICTS & COMPLIANCE', ['incident_date', 'kind', 'conflict_type', 'status', 'sanction', 'resolution'], incs),
+      section(fr ? 'AUTO-EVALUATION DACMS' : 'DACMS ASSESSMENT', ['criterion_id', 'score', 'assessed_on'], asmts),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${(group.name || 'group').replace(/\s+/g, '_')}_report.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
 
   async function handleDelete() {
     const msg = fr
@@ -104,6 +132,10 @@ export default function GroupDetail({ groupId }) {
               {group.description && <p className="text-sm text-gray-600 mt-3 max-w-2xl">{group.description}</p>}
             </div>{/* header text block */}
             <div className="flex items-center gap-2 self-start shrink-0">
+              <button onClick={exportGroupCsv}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50">
+                <Download className="size-4" /> {fr ? 'Rapport CSV' : 'CSV report'}
+              </button>
               <button onClick={() => setEditing(true)}
                 className="inline-flex items-center gap-1.5 text-sm text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50">
                 <Pencil className="size-4" /> {fr ? 'Modifier' : 'Edit'}

@@ -21,6 +21,7 @@ export default function Footer() {
   const resources = [
     { label: t.nav.knowledge, href: '/knowledge' },
     { label: t.nav.suppliers, href: '/suppliers' },
+    { label: fr ? 'Guide de l’agent' : 'Agent guide', href: '/guide' },
     { label: t.nav.about, href: '/about' },
   ];
   const sources = [

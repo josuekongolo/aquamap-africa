@@ -11,7 +11,8 @@ import { enqueue, notifyQueued } from '../lib/offlineQueue';
 const SPECIES_KEY = { tilapia: 'Tilapia', silure: 'Silure', crevette: 'Crevette', carpe: 'Carpe' };
 
 export default function LogModal({ operator, onClose, onSaved }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const fr = lang === 'fr';
   const { user } = useAuth();
 
   // Default species = operator's primary, else first benchmark species.
@@ -36,9 +37,31 @@ export default function LogModal({ operator, onClose, onSaved }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const num = (v) => (v === '' || v == null ? null : Number(v));
 
+  // Plausibility guardrails — catch fat-finger entries (e.g. 500 kg feed for
+  // 50 g) before they silently corrupt FCR and the sector aggregates.
+  function validate() {
+    const n = (v) => Number(v) || 0;
+    if (type === 'feed') {
+      if (n(form.feed_kg) < 0) return fr ? 'Quantité négative.' : 'Negative quantity.';
+      if (n(form.feed_kg) > 100000) return fr ? 'Quantité d’aliment invraisemblable (> 100 t).' : 'Implausible feed amount (> 100 t).';
+    }
+    if (type === 'stocking') {
+      if (n(form.fingerlings_count) < 0 || n(form.avg_weight_g) < 0) return fr ? 'Valeur négative.' : 'Negative value.';
+      if (n(form.avg_weight_g) > 5000) return fr ? 'Poids moyen invraisemblable (> 5 kg).' : 'Implausible average weight (> 5 kg).';
+    }
+    if (type === 'harvest') {
+      if (n(form.kg_harvested) < 0 || n(form.kg_sold) < 0) return fr ? 'Valeur négative.' : 'Negative value.';
+      if (n(form.kg_sold) > n(form.kg_harvested) && n(form.kg_harvested) > 0) return fr ? 'Kg vendus > kg récoltés.' : 'Kg sold exceeds kg harvested.';
+      if (n(form.kg_harvested) > 500000) return fr ? 'Récolte invraisemblable (> 500 t).' : 'Implausible harvest (> 500 t).';
+    }
+    return null;
+  }
+
   async function handleSave() {
     setError('');
     if (!form.log_date) { setError(t.dashboard.date); return; }
+    const v = validate();
+    if (v) { setError(v); return; }
     setSaving(true);
     const payload = {
       operator_id: operator.id,
