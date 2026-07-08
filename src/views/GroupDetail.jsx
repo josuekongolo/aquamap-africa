@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Users, MapPin, BadgeCheck, ChevronLeft, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, MapPin, BadgeCheck, ChevronLeft, Trash2, AlertTriangle, Pencil } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ACM_GROUP_TYPES, ACM_MODELS, ACM_DEGREES } from '../data/dacms';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import GroupForm from '../components/groups/GroupForm';
 import MembersTab from '../components/groups/MembersTab';
 import PlanTab from '../components/groups/PlanTab';
 import MeetingsTab from '../components/groups/MeetingsTab';
@@ -33,6 +34,7 @@ export default function GroupDetail({ groupId }) {
   const [group, setGroup] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
     if (!configured) { setLoading(false); return; }
@@ -100,14 +102,26 @@ export default function GroupDetail({ groupId }) {
                 {group.degree && <Badge variant="outline" style={{ color: 'var(--brand-2)', borderColor: 'var(--brand-2)' }}>{label(ACM_DEGREES, group.degree, fr)}</Badge>}
               </div>
               {group.description && <p className="text-sm text-gray-600 mt-3 max-w-2xl">{group.description}</p>}
-            </div>
-            {isCoordinator && (
-              <button onClick={handleDelete}
-                className="inline-flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 self-start shrink-0">
-                <Trash2 className="size-4" /> {fr ? 'Supprimer' : 'Delete'}
+            </div>{/* header text block */}
+            <div className="flex items-center gap-2 self-start shrink-0">
+              <button onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-700 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50">
+                <Pencil className="size-4" /> {fr ? 'Modifier' : 'Edit'}
               </button>
-            )}
+              {isCoordinator && (
+                <button onClick={handleDelete}
+                  className="inline-flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50">
+                  <Trash2 className="size-4" /> {fr ? 'Supprimer' : 'Delete'}
+                </button>
+              )}
+            </div>
           </div>
+
+          {editing && (
+            <GroupForm fr={fr} user={user} initialGroup={group}
+              onClose={() => setEditing(false)}
+              onSaved={() => { setEditing(false); load(); }} />
+          )}
 
           <Tabs defaultValue="members">
             <TabsList className="flex-wrap h-auto">

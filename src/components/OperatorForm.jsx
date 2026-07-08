@@ -53,6 +53,7 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
   const [gpsCapturing, setGpsCapturing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [dupWarning, setDupWarning] = useState('');
   const [form, setForm] = useState(() => initialOperator ? {
     name: initialOperator.name || '',
     phone: initialOperator.phone || '',
@@ -126,6 +127,21 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
 
   const toBool = (v) =>
     ['Oui', 'Yes'].includes(v) ? true : ['Non', 'No'].includes(v) ? false : null;
+
+  // Soft duplicate check on the phone number (normalized to digits). RLS scopes
+  // the query to the agent's org, so this catches same-org duplicate farmers.
+  const checkDuplicatePhone = async () => {
+    setDupWarning('');
+    const digits = (form.phone || '').replace(/\D/g, '');
+    if (digits.length < 6 || !supabase) return;
+    const { data } = await supabase.from('operators').select('id, name, phone').not('phone', 'is', null);
+    const match = (data || []).find((o) => o.id !== initialOperator?.id && (o.phone || '').replace(/\D/g, '') === digits);
+    if (match) {
+      setDupWarning(fr
+        ? `Un opérateur avec ce numéro existe déjà : « ${match.name} ». Vérifiez avant d'enregistrer un doublon.`
+        : `An operator with this phone already exists: "${match.name}". Check before registering a duplicate.`);
+    }
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -224,7 +240,11 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
                     placeholder={f.placeholder}
                     value={form[f.key]}
                     onChange={e => setField(f.key, e.target.value)}
+                    onBlur={f.key === 'phone' ? checkDuplicatePhone : undefined}
                   />
+                  {f.key === 'phone' && dupWarning && (
+                    <p className="mt-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">{dupWarning}</p>
+                  )}
                 </div>
               ))}
               <div>

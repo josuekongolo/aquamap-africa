@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { clearQueue } from '../lib/offlineQueue';
 
 const AuthContext = createContext();
 
@@ -44,7 +45,12 @@ export function AuthProvider({ children }) {
   const signIn = (email, password) =>
     supabase.auth.signInWithPassword({ email, password });
 
-  const signOut = () => supabase.auth.signOut();
+  // Clear any queued offline writes on sign-out — they carry farmer PII and
+  // belong to the agent who was signed in on this device.
+  const signOut = async () => {
+    try { await clearQueue(); } catch { /* no idb — nothing to clear */ }
+    return supabase.auth.signOut();
+  };
 
   // Sends the Supabase recovery email; the link lands on /reset-password where
   // the recovery session lets the user set a new password via updatePassword.

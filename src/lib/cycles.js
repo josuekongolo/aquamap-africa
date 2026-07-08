@@ -73,6 +73,39 @@ export function cycleMetrics(logs = [], events = [], cycle) {
   };
 }
 
+// Estimated standing biomass + projected harvest from the latest sample.
+// biomass = surviving count × latest avg weight; harvest date projected from the
+// species growth curve (days to reach the low end of market weight).
+// Pure form-entry — no hardware, no ML (the XpertSea/sampling pattern).
+export function biomassEstimate(logs = [], events = [], cycle, bench, now = Date.now()) {
+  if (!cycle || !bench) return null;
+  const m = cycleMetrics(logs, events, cycle);
+  const surviving = cycle.fingerlings != null
+    ? Math.max(0, (cycle.fingerlings || 0) - m.mortality)
+    : null;
+  const samples = mapSamplesToCycle(events, cycle);
+  const latest = samples.length ? samples.reduce((a, b) => (b.day > a.day ? b : a)) : (cycle.w0 ? { day: 0, weightG: cycle.w0 } : null);
+  if (!latest) return { surviving, biomassKg: null, projectedHarvest: null, latestWeightG: null };
+
+  const biomassKg = surviving != null ? (surviving * latest.weightG) / 1000 : null;
+
+  // Days from now until the growth curve reaches market weight (low end).
+  const target = bench.marketWeightG?.[0];
+  let projectedHarvest = null;
+  if (target && latest.weightG < target) {
+    const curve = bench.growthCurve || [];
+    const hit = curve.find((p) => p.weightG >= target);
+    if (hit) {
+      const daysToMarketFromStock = hit.day;
+      const daysRemaining = Math.max(0, daysToMarketFromStock - latest.day);
+      projectedHarvest = { daysRemaining, atDay: daysToMarketFromStock };
+    }
+  } else if (target && latest.weightG >= target) {
+    projectedHarvest = { daysRemaining: 0, atDay: latest.day };
+  }
+  return { surviving, biomassKg, latestWeightG: latest.weightG, latestDay: latest.day, projectedHarvest };
+}
+
 // Sampling events inside a cycle mapped to days-since-stocking (growth curve).
 export function mapSamplesToCycle(events = [], cycle) {
   if (!cycle) return [];

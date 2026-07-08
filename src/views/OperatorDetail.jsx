@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye, Pencil, ChevronLeft, HeartPulse, Trash2 } from 'lucide-react';
-import { rateFCR } from '../data/species';
+import { rateFCR, speciesBenchmarks } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
-import { buildCycles, cycleLogs, cycleMetrics, cycleDay } from '../lib/cycles';
+import { buildCycles, cycleLogs, cycleMetrics, cycleDay, biomassEstimate } from '../lib/cycles';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -140,6 +140,7 @@ export default function OperatorDetail({ operatorId }) {
   const rating = metrics.fcr != null ? rateFCR(speciesKey, metrics.fcr) : null;
   const inCycleLogs = cycle ? cycleLogs(logs, cycle) : logs;
   const dayN = cycleDay(cycle);
+  const biomass = biomassEstimate(logs, events, cycle, speciesBenchmarks[speciesKey]);
 
   const exportCsv = () => {
     if (!operator) return;
@@ -244,6 +245,42 @@ export default function OperatorDetail({ operatorId }) {
               footerMain={metrics.stockedCount ? `${metrics.stockedCount.toLocaleString()} ${fr ? 'empoissonnés' : 'stocked'}` : '—'}
               footerSub={metrics.mortality ? `${metrics.mortality.toLocaleString()} ${fr ? 'mortalités' : 'mortalities'}` : (fr ? 'Aucune mortalité' : 'No mortalities')} />
           </div>
+
+          {/* Estimated biomass + projected harvest (from latest sample) */}
+          {biomass && biomass.biomassKg != null && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2"><PackageCheck className="size-4" style={{ color: 'var(--brand)' }} /> {fr ? 'Biomasse estimée & récolte projetée' : 'Estimated biomass & projected harvest'}</CardTitle>
+                <CardDescription>{fr ? 'À partir du dernier échantillon de poids et du taux de survie — enregistrez un « Événement → Échantillon » pour affiner.' : 'From the latest weight sample and survival rate — log an “Event → Sampling” to refine.'}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{fr ? 'Poids moyen actuel' : 'Current avg weight'}</p>
+                    <p className="text-lg font-semibold tabular-nums">{Math.round(biomass.latestWeightG)} g</p>
+                    <p className="text-[11px] text-muted-foreground">{fr ? 'jour' : 'day'} {biomass.latestDay}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{fr ? 'Individus survivants' : 'Surviving stock'}</p>
+                    <p className="text-lg font-semibold tabular-nums">{biomass.surviving != null ? biomass.surviving.toLocaleString() : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{fr ? 'Biomasse estimée' : 'Estimated biomass'}</p>
+                    <p className="text-lg font-semibold tabular-nums" style={{ color: 'var(--brand)' }}>{biomass.biomassKg.toFixed(1)} kg</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{fr ? 'Récolte projetée' : 'Projected harvest'}</p>
+                    <p className="text-lg font-semibold tabular-nums">
+                      {biomass.projectedHarvest
+                        ? (biomass.projectedHarvest.daysRemaining === 0 ? (fr ? 'prête' : 'ready') : `~${biomass.projectedHarvest.daysRemaining} ${fr ? 'j' : 'd'}`)
+                        : '—'}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{fr ? 'poids marchand' : 'to market weight'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <ChartAreaInteractive data={seriesData} config={seriesConfig}
             filename={`${(operator.name || 'operator').replace(/\s+/g, '_')}_cycle`}
