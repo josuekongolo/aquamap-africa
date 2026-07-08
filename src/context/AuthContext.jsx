@@ -49,6 +49,15 @@ export function AuthProvider({ children }) {
 
   const signOut = () => supabase.auth.signOut();
 
+  // Sends the Supabase recovery email; the link lands on /reset-password where
+  // the recovery session lets the user set a new password via updatePassword.
+  const resetPassword = (email) =>
+    supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+  const updatePassword = (password) => supabase.auth.updateUser({ password });
+
   const value = {
     session,
     user: session?.user ?? null,
@@ -59,6 +68,8 @@ export function AuthProvider({ children }) {
     signIn,
     signUp,
     signOut,
+    resetPassword,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

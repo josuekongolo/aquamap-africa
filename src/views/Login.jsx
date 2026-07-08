@@ -10,12 +10,12 @@ import { Button } from '../components/supabase-ui/Button';
 
 export default function Login() {
   const { t } = useLang();
-  const { signIn, signUp, configured } = useAuth();
+  const { signIn, signUp, resetPassword, configured } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('from') || '/dashboard';
 
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
+  const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'forgot'
   const [form, setForm] = useState({ email: '', password: '', fullName: '', organization: '' });
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
@@ -29,7 +29,11 @@ export default function Login() {
     if (!configured) { setError(t.auth.notConfigured); return; }
     setBusy(true);
     try {
-      if (mode === 'signin') {
+      if (mode === 'forgot') {
+        const { error } = await resetPassword(form.email);
+        if (error) { setError(error.message); return; }
+        setInfo(t.auth.resetSent);
+      } else if (mode === 'signin') {
         const { error } = await signIn(form.email, form.password);
         if (error) { setError(error.message); return; }
         router.replace(redirectTo);
@@ -48,6 +52,7 @@ export default function Login() {
   }
 
   const isSignup = mode === 'signup';
+  const isForgot = mode === 'forgot';
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
@@ -56,9 +61,11 @@ export default function Login() {
           {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark; next/image optimization is unnecessary */}
           <img src="/img/logo-mark.png" alt="AQAFRIKA" className="w-14 h-14 mx-auto mb-2 object-contain" />
           <h1 className="text-2xl font-bold text-black">
-            {isSignup ? t.auth.signupTitle : t.auth.loginTitle}
+            {isForgot ? t.auth.forgotTitle : isSignup ? t.auth.signupTitle : t.auth.loginTitle}
           </h1>
-          {!isSignup && <p className="text-gray-500 text-sm mt-1">{t.auth.loginSub}</p>}
+          {!isSignup && (
+            <p className="text-gray-500 text-sm mt-1">{isForgot ? t.auth.forgotSub : t.auth.loginSub}</p>
+          )}
         </div>
 
         {!configured && (
@@ -85,19 +92,29 @@ export default function Login() {
             </>
           )}
           <Input label={t.auth.email} type="email" required value={form.email} onChange={e => set('email', e.target.value)} />
-          <Input label={t.auth.password} type="password" required value={form.password} onChange={e => set('password', e.target.value)} />
+          {!isForgot && (
+            <Input label={t.auth.password} type="password" required value={form.password} onChange={e => set('password', e.target.value)} />
+          )}
 
           <Button type="submit" variant="primary" size="large" block loading={busy} className="mt-2">
-            {busy ? t.auth.signingIn : isSignup ? t.auth.signUp : t.auth.signIn}
+            {busy ? t.auth.signingIn : isForgot ? t.auth.sendReset : isSignup ? t.auth.signUp : t.auth.signIn}
           </Button>
         </form>
 
+        {mode === 'signin' && (
+          <button
+            onClick={() => { setMode('forgot'); setError(''); setInfo(''); }}
+            className="mt-3 w-full text-sm text-center text-gray-500 hover:text-gray-800 hover:underline"
+          >
+            {t.auth.forgot}
+          </button>
+        )}
         <button
-          onClick={() => { setMode(isSignup ? 'signin' : 'signup'); setError(''); setInfo(''); }}
+          onClick={() => { setMode(isSignup || isForgot ? 'signin' : 'signup'); setError(''); setInfo(''); }}
           className="mt-4 w-full text-sm text-center font-medium hover:underline"
           style={{ color: '#000' }}
         >
-          {isSignup ? t.auth.haveAccount : t.auth.noAccount}
+          {isForgot ? t.auth.backToLogin : isSignup ? t.auth.haveAccount : t.auth.noAccount}
         </button>
       </div>
     </div>
