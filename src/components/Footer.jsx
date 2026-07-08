@@ -55,6 +55,14 @@ export default function Footer() {
       <div className="border-t">
         <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
           <span>© {year} AQAFRIKA. {fr ? 'Tous droits réservés.' : 'All rights reserved.'}</span>
+          <span className="flex items-center gap-3">
+            <Link href="/privacy" className="hover:text-gray-600 underline-offset-2 hover:underline">
+              {fr ? 'Confidentialité' : 'Privacy'}
+            </Link>
+            <Link href="/terms" className="hover:text-gray-600 underline-offset-2 hover:underline">
+              {fr ? 'Conditions' : 'Terms'}
+            </Link>
+          </span>
           <span>{fr ? 'Données sourcées — FAO · WorldFish · CEDEAO · Banque mondiale' : 'Sourced data — FAO · WorldFish · ECOWAS · World Bank'}</span>
         </div>
       </div>

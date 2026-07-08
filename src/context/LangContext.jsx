@@ -78,6 +78,9 @@ const translations = {
       male: 'Homme',
       female: 'Femme',
       other: 'Autre',
+      consent: "J'atteste avoir informé l'opérateur et recueilli son consentement au stockage de ses données et à leur usage dans des statistiques anonymisées.",
+      consentRequired: 'Le consentement de l\'opérateur est requis (étape 1).',
+      saveChanges: 'Enregistrer les modifications',
     },
     dashboard: {
       welcome: 'Bienvenue,',
@@ -221,6 +224,9 @@ const translations = {
       passwordMismatch: 'Les mots de passe ne correspondent pas.',
       resetSuccess: 'Mot de passe mis à jour ✓ Vous êtes connecté.',
       resetInvalid: 'Lien invalide ou expiré. Demandez un nouveau lien depuis la page de connexion.',
+      inviteOnly: 'Les comptes agents sont créés sur invitation. Contactez votre coordinateur ou contact@aqafrica.com.',
+      privacyLink: 'Politique de confidentialité',
+      termsLink: "Conditions d'utilisation",
     },
   },
   en: {
@@ -298,6 +304,9 @@ const translations = {
       male: 'Male',
       female: 'Female',
       other: 'Other',
+      consent: 'I attest that the farmer has been informed and consents to their data being stored and used in anonymized statistics.',
+      consentRequired: "The operator's consent is required (step 1).",
+      saveChanges: 'Save changes',
     },
     dashboard: {
       welcome: 'Welcome,',
@@ -441,6 +450,9 @@ const translations = {
       passwordMismatch: 'Passwords do not match.',
       resetSuccess: 'Password updated ✓ You are signed in.',
       resetInvalid: 'Invalid or expired link. Request a new one from the sign-in page.',
+      inviteOnly: 'Agent accounts are created by invitation. Contact your coordinator or contact@aqafrica.com.',
+      privacyLink: 'Privacy policy',
+      termsLink: 'Terms of use',
     },
   },
 };

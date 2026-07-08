@@ -10,13 +10,14 @@ import { Button } from '../components/supabase-ui/Button';
 
 export default function Login() {
   const { t } = useLang();
-  const { signIn, signUp, resetPassword, configured } = useAuth();
+  const { signIn, resetPassword, configured } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('from') || '/dashboard';
 
-  const [mode, setMode] = useState('signin'); // 'signin' | 'signup' | 'forgot'
-  const [form, setForm] = useState({ email: '', password: '', fullName: '', organization: '' });
+  // Signup is invite-only (public self-signup disabled) — modes: signin | forgot.
+  const [mode, setMode] = useState('signin');
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -33,25 +34,16 @@ export default function Login() {
         const { error } = await resetPassword(form.email);
         if (error) { setError(error.message); return; }
         setInfo(t.auth.resetSent);
-      } else if (mode === 'signin') {
+      } else {
         const { error } = await signIn(form.email, form.password);
         if (error) { setError(error.message); return; }
         router.replace(redirectTo);
-      } else {
-        const { data, error } = await signUp(form.email, form.password, {
-          full_name: form.fullName,
-          organization: form.organization,
-        });
-        if (error) { setError(error.message); return; }
-        if (data.session) router.replace(redirectTo);
-        else { setInfo(t.auth.checkEmail); setMode('signin'); }
       }
     } finally {
       setBusy(false);
     }
   }
 
-  const isSignup = mode === 'signup';
   const isForgot = mode === 'forgot';
 
   return (
@@ -61,11 +53,9 @@ export default function Login() {
           {/* eslint-disable-next-line @next/next/no-img-element -- static brand mark; next/image optimization is unnecessary */}
           <img src="/img/logo-mark.png" alt="AQAFRIKA" className="w-14 h-14 mx-auto mb-2 object-contain" />
           <h1 className="text-2xl font-bold text-black">
-            {isForgot ? t.auth.forgotTitle : isSignup ? t.auth.signupTitle : t.auth.loginTitle}
+            {isForgot ? t.auth.forgotTitle : t.auth.loginTitle}
           </h1>
-          {!isSignup && (
-            <p className="text-gray-500 text-sm mt-1">{isForgot ? t.auth.forgotSub : t.auth.loginSub}</p>
-          )}
+          <p className="text-gray-500 text-sm mt-1">{isForgot ? t.auth.forgotSub : t.auth.loginSub}</p>
         </div>
 
         {!configured && (
@@ -85,37 +75,40 @@ export default function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isSignup && (
-            <>
-              <Input label={t.auth.fullName} value={form.fullName} onChange={e => set('fullName', e.target.value)} />
-              <Input label={t.auth.organization} value={form.organization} onChange={e => set('organization', e.target.value)} />
-            </>
-          )}
           <Input label={t.auth.email} type="email" required value={form.email} onChange={e => set('email', e.target.value)} />
           {!isForgot && (
             <Input label={t.auth.password} type="password" required value={form.password} onChange={e => set('password', e.target.value)} />
           )}
 
           <Button type="submit" variant="primary" size="large" block loading={busy} className="mt-2">
-            {busy ? t.auth.signingIn : isForgot ? t.auth.sendReset : isSignup ? t.auth.signUp : t.auth.signIn}
+            {busy ? t.auth.signingIn : isForgot ? t.auth.sendReset : t.auth.signIn}
           </Button>
         </form>
 
-        {mode === 'signin' && (
+        {mode === 'signin' ? (
           <button
             onClick={() => { setMode('forgot'); setError(''); setInfo(''); }}
             className="mt-3 w-full text-sm text-center text-gray-500 hover:text-gray-800 hover:underline"
           >
             {t.auth.forgot}
           </button>
+        ) : (
+          <button
+            onClick={() => { setMode('signin'); setError(''); setInfo(''); }}
+            className="mt-4 w-full text-sm text-center font-medium hover:underline"
+            style={{ color: '#000' }}
+          >
+            {t.auth.backToLogin}
+          </button>
         )}
-        <button
-          onClick={() => { setMode(isSignup || isForgot ? 'signin' : 'signup'); setError(''); setInfo(''); }}
-          className="mt-4 w-full text-sm text-center font-medium hover:underline"
-          style={{ color: '#000' }}
-        >
-          {isForgot ? t.auth.backToLogin : isSignup ? t.auth.haveAccount : t.auth.noAccount}
-        </button>
+        <p className="mt-4 text-xs text-center text-gray-400">
+          {t.auth.inviteOnly}
+        </p>
+        <p className="mt-2 text-xs text-center text-gray-400">
+          <a href="/privacy" className="underline hover:text-gray-600">{t.auth.privacyLink}</a>
+          {' · '}
+          <a href="/terms" className="underline hover:text-gray-600">{t.auth.termsLink}</a>
+        </p>
       </div>
     </div>
   );
