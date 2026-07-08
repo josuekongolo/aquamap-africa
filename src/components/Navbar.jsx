@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, X, LogOut, Plus } from 'lucide-react';
+import { Menu, X, LogOut, Plus, Settings } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -139,6 +139,10 @@ export default function Navbar() {
                     style={{ backgroundColor: 'var(--brand)' }}>
                     <Plus className="w-4 h-4" /> {t.register.title}
                   </Link>
+                  <Link href="/settings" title={lang === 'fr' ? 'Paramètres' : 'Settings'}
+                    className={`p-2 rounded-full transition-colors ${onDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'}`}>
+                    <Settings className="w-4 h-4" />
+                  </Link>
                   <button onClick={handleSignOut} title={user.email}
                     className={`p-2 rounded-full transition-colors ${onDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'}`}>
                     <LogOut className="w-4 h-4" />
@@ -182,8 +186,12 @@ export default function Navbar() {
                     style={{ backgroundColor: 'var(--brand)' }}>
                     <Plus className="w-4 h-4" /> {t.register.title}
                   </Link>
-                  <button onClick={handleSignOut}
+                  <Link href="/settings" onClick={() => setOpen(false)}
                     className="block w-full text-center py-2.5 mt-1 text-sm font-medium text-slate-500 hover:text-slate-900">
+                    {lang === 'fr' ? 'Paramètres' : 'Settings'}
+                  </Link>
+                  <button onClick={handleSignOut}
+                    className="block w-full text-center py-2.5 text-sm font-medium text-slate-500 hover:text-slate-900">
                     {t.auth.signOut}
                   </button>
                 </>
