@@ -634,3 +634,196 @@ begin
     execute format('create trigger write_audit after insert or update or delete on public.%s for each row execute function public.write_audit()', tbl);
   end loop;
 end $$;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 12. MULTI-ORGANIZATION TEAM MODEL
+--     Moves data ownership from the individual agent (created_by = auth.uid())
+--     to the ORGANIZATION: teammates in the same org share operators, groups and
+--     all field data; a coordinator supervises; a viewer reads without PII edit
+--     rights; a platform admin still sees everything. created_by is retained for
+--     attribution ("registered by"). The whole section runs idempotently and is
+--     safe to re-run; wrap in a single txn when applying to avoid a policy gap.
+
+-- 12a. Organizations + default org for the existing pilot agents.
+create table if not exists public.organizations (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  created_at timestamptz not null default now()
+);
+insert into public.organizations (id, name)
+  select '00000000-0000-4000-a000-0000000000a1', 'AQAFRIKA Pilot'
+  where not exists (select 1 from public.organizations);
+
+alter table public.agents add column if not exists org_id uuid references public.organizations (id);
+-- Backfill any org-less agents into the oldest org (the pilot org).
+update public.agents set org_id = (select id from public.organizations order by created_at limit 1)
+  where org_id is null;
+
+-- Widen roles: agent | coordinator | admin | viewer (admin stays platform-level).
+alter table public.agents drop constraint if exists agents_role_check;
+alter table public.agents add constraint agents_role_check
+  check (role in ('agent', 'coordinator', 'admin', 'viewer'));
+
+-- 12b. Org-aware helpers (security definer → no RLS recursion, mirrors is_admin()).
+create or replace function public.current_org()
+returns uuid language sql security definer set search_path = public stable as $$
+  select org_id from public.agents where id = auth.uid();
+$$;
+create or replace function public.is_coordinator()
+returns boolean language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.agents where id = auth.uid() and role in ('coordinator', 'admin'));
+$$;
+create or replace function public.can_write()
+returns boolean language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.agents where id = auth.uid() and role in ('agent', 'coordinator', 'admin'));
+$$;
+
+-- 12c. org_id on every data table, backfilled from the creator's org.
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['operators','logs','events','groups','group_members','meetings','plans','plan_indicators','incidents','zones','assessments'] loop
+    execute format('alter table public.%s add column if not exists org_id uuid references public.organizations (id)', tbl);
+    execute format('create index if not exists %s_org_idx on public.%s (org_id)', tbl, tbl);
+    execute format($f$update public.%1$s t set org_id = a.org_id from public.agents a where a.id = t.created_by and t.org_id is null$f$, tbl);
+  end loop;
+end $$;
+
+-- 12d. Stamp org_id on insert from the creator's org (keyed on created_by, NOT
+--      auth.uid(), so offline-queue payloads and service-role seeds insert
+--      cleanly). BEFORE INSERT runs before the RLS WITH CHECK, so policies may
+--      require org_id = current_org().
+create or replace function public.stamp_org_id()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.org_id is null then
+    select org_id into new.org_id from public.agents where id = new.created_by;
+  end if;
+  return new;
+end;
+$$;
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['operators','logs','events','groups','group_members','meetings','plans','plan_indicators','incidents','zones','assessments'] loop
+    execute format('drop trigger if exists stamp_org_id on public.%s', tbl);
+    execute format('create trigger stamp_org_id before insert on public.%s for each row execute function public.stamp_org_id()', tbl);
+  end loop;
+end $$;
+
+-- 12e. Replace owner-silo RLS with org-scoped RLS.
+--      read: any org member (or admin). write: writers in the org, and inserts
+--      must be attributed to the caller. groups DELETE is coordinator-only.
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['operators','logs','events','groups','group_members','meetings','plans','plan_indicators','incidents','zones','assessments'] loop
+    execute format('drop policy if exists %1$s_owner_all on public.%1$s', tbl);
+    execute format('drop policy if exists %1$s_admin_read on public.%1$s', tbl);
+    execute format('drop policy if exists %1$s_org_read on public.%1$s', tbl);
+    execute format('drop policy if exists %1$s_org_insert on public.%1$s', tbl);
+    execute format('drop policy if exists %1$s_org_update on public.%1$s', tbl);
+    execute format('drop policy if exists %1$s_org_delete on public.%1$s', tbl);
+    execute format('create policy %1$s_org_read on public.%1$s for select using (org_id = public.current_org() or public.is_admin())', tbl);
+    execute format('create policy %1$s_org_insert on public.%1$s for insert with check (created_by = auth.uid() and public.can_write() and (org_id is null or org_id = public.current_org()))', tbl);
+    execute format('create policy %1$s_org_update on public.%1$s for update using (org_id = public.current_org() and public.can_write())', tbl);
+  end loop;
+  -- deletes: coordinator-only for groups, writer for the rest.
+  execute 'create policy groups_org_delete on public.groups for delete using (org_id = public.current_org() and public.is_coordinator())';
+  foreach tbl in array array['operators','logs','events','group_members','meetings','plans','plan_indicators','incidents','zones','assessments'] loop
+    execute format('create policy %1$s_org_delete on public.%1$s for delete using (org_id = public.current_org() and public.can_write())', tbl);
+  end loop;
+end $$;
+
+-- 12f. Relax the role-protection trigger for coordinators (own org, never admin).
+create or replace function public.protect_agent_role()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.role is distinct from old.role and auth.uid() is not null and not public.is_admin() then
+    -- coordinators may change roles within their own org, but never grant admin
+    if public.is_coordinator()
+       and old.org_id = public.current_org()
+       and new.role in ('agent', 'coordinator', 'viewer') then
+      return new;
+    end if;
+    raise exception 'role changes require a coordinator (and admin cannot be self-granted)';
+  end if;
+  return new;
+end;
+$$;
+
+-- 12g. Invitations (coordinator-managed; consumed on signup).
+create table if not exists public.invites (
+  id         uuid primary key default gen_random_uuid(),
+  org_id     uuid not null references public.organizations (id) on delete cascade,
+  email      text not null,
+  role       text not null default 'agent' check (role in ('agent', 'coordinator', 'viewer')),
+  invited_by uuid references public.agents (id) on delete set null,
+  token      uuid not null default gen_random_uuid(),
+  expires_at timestamptz not null default now() + interval '7 days',
+  accepted_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists invites_email_idx on public.invites (lower(email));
+alter table public.invites enable row level security;
+drop policy if exists invites_coord_all on public.invites;
+create policy invites_coord_all on public.invites
+  for all using (org_id = public.current_org() and public.is_coordinator())
+  with check (org_id = public.current_org() and public.is_coordinator());
+
+-- 12h. On signup, create the agent row AND consume a matching invite (org+role).
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare inv public.invites;
+begin
+  select * into inv from public.invites
+    where lower(email) = lower(new.email) and accepted_at is null and expires_at > now()
+    order by created_at desc limit 1;
+
+  insert into public.agents (id, full_name, organization, org_id, role)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    coalesce(new.raw_user_meta_data ->> 'organization', ''),
+    inv.org_id,
+    coalesce(inv.role, 'agent')
+  )
+  on conflict (id) do nothing;
+
+  if inv.id is not null then
+    update public.invites set accepted_at = now() where id = inv.id;
+  end if;
+  return new;
+end;
+$$;
+
+-- 12i. Reassign one agent's data to another (offboarding). Coordinator/admin
+--      only; both agents must share the caller's org (or caller is admin).
+create or replace function public.reassign_agent_data(from_agent uuid, to_agent uuid)
+returns void
+language plpgsql
+security definer set search_path = public
+as $$
+declare tbl text;
+declare from_org uuid; declare to_org uuid;
+begin
+  select org_id into from_org from public.agents where id = from_agent;
+  select org_id into to_org   from public.agents where id = to_agent;
+  if not public.is_admin() then
+    if not public.is_coordinator() or from_org is distinct from public.current_org() or to_org is distinct from public.current_org() then
+      raise exception 'not authorized to reassign across organizations';
+    end if;
+  end if;
+  foreach tbl in array array['operators','logs','events','groups','group_members','meetings','plans','plan_indicators','incidents','zones','assessments'] loop
+    execute format('update public.%s set created_by = $1 where created_by = $2', tbl) using to_agent, from_agent;
+  end loop;
+end;
+$$;
+revoke all on function public.reassign_agent_data(uuid, uuid) from public;
+grant execute on function public.reassign_agent_data(uuid, uuid) to authenticated;

@@ -44,9 +44,6 @@ export function AuthProvider({ children }) {
   const signIn = (email, password) =>
     supabase.auth.signInWithPassword({ email, password });
 
-  const signUp = (email, password, meta) =>
-    supabase.auth.signUp({ email, password, options: { data: meta } });
-
   const signOut = () => supabase.auth.signOut();
 
   // Sends the Supabase recovery email; the link lands on /reset-password where
@@ -58,15 +55,21 @@ export function AuthProvider({ children }) {
 
   const updatePassword = (password) => supabase.auth.updateUser({ password });
 
+  const role = agent?.role ?? null;
   const value = {
     session,
     user: session?.user ?? null,
     agent,
-    isAdmin: agent?.role === 'admin',
+    role,
+    orgId: agent?.org_id ?? null,
+    isAdmin: role === 'admin',
+    isCoordinator: role === 'coordinator' || role === 'admin',
+    // Viewers are read-only; everyone else with a role can write. RLS enforces
+    // this server-side regardless — canWrite just hides write affordances.
+    canWrite: role != null && role !== 'viewer',
     loading,
     configured: isSupabaseConfigured,
     signIn,
-    signUp,
     signOut,
     resetPassword,
     updatePassword,

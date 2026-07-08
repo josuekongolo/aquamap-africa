@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 // hero on the homepage, frosted light glass once scrolled or on any other page.
 export default function Navbar() {
   const { t, lang, toggle } = useLang();
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isCoordinator, signOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -52,6 +52,7 @@ export default function Navbar() {
         { to: '/map', label: t.nav.map },
         { to: '/knowledge', label: t.nav.knowledge },
         { to: '/suppliers', label: t.nav.suppliers },
+        ...(isCoordinator ? [{ to: '/team', label: t.nav.team }] : []),
         ...(isAdmin ? [{ to: '/admin', label: t.nav.admin }] : []),
       ]
     : [

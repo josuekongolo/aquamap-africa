@@ -58,21 +58,40 @@ export default function Admin() {
   const [filterCountry, setFilterCountry] = useState('all');
   const [filterSpecies, setFilterSpecies] = useState('all');
 
+  const [agents, setAgents] = useState([]);
+
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let active = true;
     (async () => {
-      const [opRes, logRes] = await Promise.all([
+      const [opRes, logRes, agRes] = await Promise.all([
         supabase.from('operators').select('*').order('created_at', { ascending: false }),
-        supabase.from('logs').select('operator_id, type, feed_kg, kg_harvested, fingerlings_count, avg_weight_g'),
+        supabase.from('logs').select('operator_id, created_by, log_date, type, feed_kg, kg_harvested, fingerlings_count, avg_weight_g'),
+        supabase.from('agents').select('id, full_name, organization, role, active'),
       ]);
       if (!active) return;
       setOperators(opRes.data || []);
       setLogs(logRes.data || []);
+      setAgents(agRes.data || []);
       setLoading(false);
     })();
     return () => { active = false; };
   }, []);
+
+  // Per-agent activity (the CommCare supervisor pattern): operators registered,
+  // logs submitted, last submission — grouped from already-loaded rows.
+  const agentActivity = (() => {
+    const byAgent = {};
+    for (const o of operators) (byAgent[o.created_by] ||= { ops: 0, logs: 0, last: null }).ops += 1;
+    for (const l of logs) {
+      const a = (byAgent[l.created_by] ||= { ops: 0, logs: 0, last: null });
+      a.logs += 1;
+      if (l.log_date && (!a.last || l.log_date > a.last)) a.last = l.log_date;
+    }
+    return agents
+      .map((ag) => ({ ...ag, ...(byAgent[ag.id] || { ops: 0, logs: 0, last: null }) }))
+      .sort((x, y) => y.ops - x.ops);
+  })();
 
   const filtered = operators.filter(op => {
     if (filterCountry !== 'all' && op.country !== filterCountry) return false;
@@ -267,6 +286,48 @@ export default function Admin() {
         </CardHeader>
         <CardContent>
           {loading ? <Empty loading lang={lang} /> : <OperatorsDataTable operators={filtered} t={t} lang={lang} onExport={exportOperators} />}
+        </CardContent>
+      </Card>
+
+      {/* Per-agent activity (supervisor view) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-black">{lang === 'fr' ? 'Activité par agent' : 'Per-agent activity'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? <Empty loading lang={lang} /> : (
+            <div className="rounded-lg border overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="px-3 py-2 font-medium">{lang === 'fr' ? 'Agent' : 'Agent'}</th>
+                    <th className="px-3 py-2 font-medium">{lang === 'fr' ? 'Rôle' : 'Role'}</th>
+                    <th className="px-3 py-2 font-medium text-right">{lang === 'fr' ? 'Opérateurs' : 'Operators'}</th>
+                    <th className="px-3 py-2 font-medium text-right">{lang === 'fr' ? 'Saisies' : 'Logs'}</th>
+                    <th className="px-3 py-2 font-medium text-right">{lang === 'fr' ? 'Dernière saisie' : 'Last submission'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agentActivity.map((a) => (
+                    <tr key={a.id} className="border-b last:border-0">
+                      <td className="px-3 py-2.5 font-medium">
+                        {a.full_name || a.id.slice(0, 8)}
+                        {a.active === false && <span className="ml-1.5 text-xs text-red-500">({lang === 'fr' ? 'désactivé' : 'inactive'})</span>}
+                        {a.organization && <div className="text-xs text-muted-foreground font-normal">{a.organization}</div>}
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground">{a.role}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{a.ops}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums">{a.logs}</td>
+                      <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{a.last || '—'}</td>
+                    </tr>
+                  ))}
+                  {agentActivity.length === 0 && (
+                    <tr><td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">{lang === 'fr' ? 'Aucun agent.' : 'No agents.'}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

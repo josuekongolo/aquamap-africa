@@ -26,7 +26,7 @@ const label = (list, id, fr) => {
 // meetings, conflict/compliance register, DACMS self-assessment, zones.
 export default function GroupDetail({ groupId }) {
   const { t, lang } = useLang();
-  const { user, configured } = useAuth();
+  const { user, configured, isCoordinator } = useAuth();
   const router = useRouter();
   const fr = lang === 'fr';
 
@@ -101,10 +101,12 @@ export default function GroupDetail({ groupId }) {
               </div>
               {group.description && <p className="text-sm text-gray-600 mt-3 max-w-2xl">{group.description}</p>}
             </div>
-            <button onClick={handleDelete}
-              className="inline-flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 self-start shrink-0">
-              <Trash2 className="size-4" /> {fr ? 'Supprimer' : 'Delete'}
-            </button>
+            {isCoordinator && (
+              <button onClick={handleDelete}
+                className="inline-flex items-center gap-1.5 text-sm text-red-600 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 self-start shrink-0">
+                <Trash2 className="size-4" /> {fr ? 'Supprimer' : 'Delete'}
+              </button>
+            )}
           </div>
 
           <Tabs defaultValue="members">

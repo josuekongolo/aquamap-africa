@@ -8,8 +8,8 @@ import { useLang } from '../context/LangContext';
 
 // Gates a route behind agent auth. Pass adminOnly to additionally require the
 // admin role. Client-side guard (App Router): redirect via the router in an effect.
-export default function ProtectedRoute({ children, adminOnly = false }) {
-  const { user, agent, isAdmin, loading, signOut } = useAuth();
+export default function ProtectedRoute({ children, adminOnly = false, coordinatorOnly = false }) {
+  const { user, agent, isAdmin, isCoordinator, loading, signOut } = useAuth();
   const { t, lang } = useLang();
   const router = useRouter();
   const pathname = usePathname();
@@ -45,12 +45,14 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
     );
   }
 
-  if (adminOnly && !isAdmin) {
+  if ((adminOnly && !isAdmin) || (coordinatorOnly && !isCoordinator)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="text-center text-gray-500">
           <div className="mb-3 flex justify-center"><Lock className="w-9 h-9" /></div>
-          {t.auth.adminOnly}
+          {coordinatorOnly && !adminOnly
+            ? (lang === 'fr' ? 'Accès réservé aux coordinateurs.' : 'Coordinators only.')
+            : t.auth.adminOnly}
         </div>
       </div>
     );
