@@ -5,7 +5,7 @@ import * as React from 'react';
 import {
   flexRender, getCoreRowModel, getSortedRowModel, getPaginationRowModel, getFilteredRowModel, useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronLeft, ChevronRight, Columns3 } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, Columns3, Trash2 } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 // TanStack data table (dashboard-01 style) for an operator's production logs.
-export function LogsDataTable({ logs, t }) {
+// onDelete (optional) enables a per-row delete action (a wrong feed/harvest
+// entry otherwise permanently skews FCR).
+export function LogsDataTable({ logs, t, onDelete }) {
   const [sorting, setSorting] = React.useState([{ id: 'log_date', desc: true }]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
   const [tab, setTab] = React.useState('all');
@@ -55,7 +57,18 @@ export function LogsDataTable({ logs, t }) {
       },
       enableSorting: false,
     },
-  ], [t]); // eslint-disable-line react-hooks/exhaustive-deps
+    ...(onDelete ? [{
+      id: 'actions', header: '', enableSorting: false, enableHiding: false,
+      cell: ({ row }) => (
+        <div className="text-right">
+          <Button variant="ghost" size="icon" className="size-8 text-gray-300 hover:text-red-600"
+            title={t.dashboard.cancel} onClick={() => onDelete(row.original)}>
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      ),
+    }] : []),
+  ], [t, onDelete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const data = React.useMemo(() => (tab === 'all' ? logs : logs.filter(l => l.type === tab)), [logs, tab]);
 

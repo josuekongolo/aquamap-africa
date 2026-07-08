@@ -6,31 +6,23 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardAction }
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { speciesBenchmarks } from '../../data/species';
+import { buildCycles, cycleWindow, mapSamplesToCycle } from '../../lib/cycles';
 
 const DAY_MS = 86400000;
 const SAMPLE_EVERY_DAYS = 14; // weigh a sample every ~2 weeks (standard practice)
 
 // Growth curve: the species FAO/SRAC reference (expected weight by day) with the
 // operator's ACTUAL sampled weights for a chosen STOCKING CYCLE overlaid.
-// A cycle = the period from one stocking log to the next; day 0 is the stocking
-// date and its average weight. Sampling events in that window map to days-since-stocking.
-export default function GrowthCurveChart({ speciesKey, logs = [], events = [], fr }) {
+// Cycle derivation lives in src/lib/cycles.js (shared with the FCR metrics).
+// When `cycle` is passed, the page controls cycle selection; otherwise the
+// chart manages its own selector (legacy standalone mode).
+export default function GrowthCurveChart({ speciesKey, logs = [], events = [], fr, cycle: cycleProp = null }) {
   const bench = speciesBenchmarks[speciesKey];
 
-  // Build cycles from stocking logs (oldest → newest).
-  const stockings = logs
-    .filter((l) => l.type === 'stocking' && l.log_date)
-    .sort((a, b) => String(a.log_date).localeCompare(String(b.log_date)));
-  const cycles = stockings.map((s, i) => ({
-    id: s.id,
-    start: s.log_date,
-    end: stockings[i + 1]?.log_date || null, // exclusive upper bound
-    w0: Number(s.avg_weight_g) || null,
-  }));
-
+  const cycles = buildCycles(logs);
   const [cycleId, setCycleId] = useState(null);
   const [now] = useState(() => Date.now()); // captured at mount for the "next weigh-in" estimate
-  const cycle = cycles.find((c) => c.id === cycleId) || cycles[cycles.length - 1] || null;
+  const cycle = cycleProp || cycles.find((c) => c.id === cycleId) || cycles[cycles.length - 1] || null;
 
   if (!bench) return null;
 
@@ -41,20 +33,12 @@ export default function GrowthCurveChart({ speciesKey, logs = [], events = [], f
 
   const samples = [];
   if (cycle) {
-    const startTs = new Date(cycle.start).getTime();
-    const endTs = cycle.end ? new Date(cycle.end).getTime() : Infinity;
+    const { startTs } = cycleWindow(cycle);
     if (cycle.w0 > 0) { (byDay[0] ||= { day: 0 }).actual = cycle.w0; samples.push({ day: 0, ts: startTs }); }
-    for (const e of events) {
-      if (e.type !== 'sampling') continue;
-      const w = Number(e.details?.avg_weight_g);
-      if (!w) continue;
-      const ts = new Date(e.event_date).getTime();
-      if (ts < startTs || ts >= endTs) continue; // only this cycle's samples
-      const day = Math.round((ts - startTs) / DAY_MS);
-      if (day < 0) continue;
-      (byDay[day] ||= { day }).actual = w;
-      samples.push({ day, ts });
-      if (day > maxDay) maxDay = day;
+    for (const s of mapSamplesToCycle(events, cycle)) {
+      (byDay[s.day] ||= { day: s.day }).actual = s.weightG;
+      samples.push({ day: s.day, ts: s.ts });
+      if (s.day > maxDay) maxDay = s.day;
     }
   }
   const hasActual = samples.length > 0;
@@ -77,7 +61,7 @@ export default function GrowthCurveChart({ speciesKey, logs = [], events = [], f
       <CardHeader>
         <CardTitle>{fr ? 'Courbe de croissance' : 'Growth curve'} — {speciesKey}</CardTitle>
         <CardDescription>{fr ? `Poids attendu (g) par jour · ${bench.scientificName}` : `Expected weight (g) by day · ${bench.scientificName}`}</CardDescription>
-        {cycles.length > 1 && (
+        {!cycleProp && cycles.length > 1 && (
           <CardAction>
             <Select value={cycle?.id || ''} onValueChange={setCycleId}>
               <SelectTrigger size="sm" className="w-[180px]"><SelectValue /></SelectTrigger>

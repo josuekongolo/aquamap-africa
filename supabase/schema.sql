@@ -536,3 +536,101 @@ alter table public.agents add column if not exists active boolean not null defau
 -- 11d. Farmer consent (agent attests informed consent at registration).
 alter table public.operators add column if not exists consent_given boolean;
 alter table public.operators add column if not exists consent_date  date;
+
+-- 11e. agent_portfolio() — one query powering the portfolio dashboard:
+--      per-operator rollups for the caller's visible operators (SECURITY
+--      INVOKER, so RLS scopes it: agent → own rows; admin → all). The "current
+--      cycle" is the window since the latest stocking log. FCR rating happens
+--      client-side (species bands live in src/data/species.js).
+create or replace function public.agent_portfolio()
+returns table (
+  operator_id        uuid,
+  last_log_date      date,
+  last_event_date    date,
+  high_events_30d    integer,
+  cycle_start        date,
+  cycle_species      text,
+  cycle_fingerlings  integer,
+  cycle_stocked_kg   numeric,
+  cycle_feed_kg      numeric,
+  cycle_harvest_kg   numeric,
+  cycle_mortality    integer
+)
+language sql
+stable
+as $$
+  with last_stock as (
+    select distinct on (operator_id)
+           operator_id, log_date, species, fingerlings_count,
+           (coalesce(fingerlings_count, 0) * coalesce(avg_weight_g, 0)) / 1000.0 as stocked_kg
+    from public.logs
+    where type = 'stocking'
+    order by operator_id, log_date desc
+  )
+  select
+    o.id,
+    (select max(l.log_date)   from public.logs   l where l.operator_id = o.id),
+    (select max(e.event_date) from public.events e where e.operator_id = o.id),
+    (select count(*)::int from public.events e
+      where e.operator_id = o.id and e.severity = 'high'
+        and e.event_date >= current_date - interval '30 days'),
+    ls.log_date, ls.species, ls.fingerlings_count, ls.stocked_kg,
+    (select coalesce(sum(l.feed_kg), 0) from public.logs l
+      where l.operator_id = o.id and l.type = 'feed' and l.log_date >= ls.log_date),
+    (select coalesce(sum(l.kg_harvested), 0) from public.logs l
+      where l.operator_id = o.id and l.type = 'harvest' and l.log_date >= ls.log_date),
+    (select coalesce(sum(nullif(e.details->>'count', '')::int), 0) from public.events e
+      where e.operator_id = o.id and e.type = 'mortality' and e.event_date >= ls.log_date)
+  from public.operators o
+  left join last_stock ls on ls.operator_id = o.id;
+$$;
+grant execute on function public.agent_portfolio() to authenticated;
+
+-- 11f. updated_at + lightweight audit trail on the editable data tables (edit
+--      UI now exists, so track mutations). audit_log is append-only, owner-read.
+alter table public.operators add column if not exists updated_at timestamptz not null default now();
+alter table public.logs      add column if not exists updated_at timestamptz not null default now();
+alter table public.events    add column if not exists updated_at timestamptz not null default now();
+
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at = now(); return new; end;
+$$;
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['operators','logs','events'] loop
+    execute format('drop trigger if exists touch_updated_at on public.%s', tbl);
+    execute format('create trigger touch_updated_at before update on public.%s for each row execute function public.touch_updated_at()', tbl);
+  end loop;
+end $$;
+
+create table if not exists public.audit_log (
+  id         bigint generated always as identity primary key,
+  table_name text not null,
+  row_id     uuid not null,
+  action     text not null,               -- INSERT | UPDATE | DELETE
+  actor      uuid,                          -- auth.uid() at mutation time
+  at         timestamptz not null default now()
+);
+create index if not exists audit_log_row_idx on public.audit_log (table_name, row_id);
+alter table public.audit_log enable row level security;
+drop policy if exists audit_log_admin_read on public.audit_log;
+create policy audit_log_admin_read on public.audit_log for select using (public.is_admin());
+
+create or replace function public.write_audit()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.audit_log (table_name, row_id, action, actor)
+  values (tg_table_name, coalesce(new.id, old.id), tg_op, auth.uid());
+  return coalesce(new, old);
+end;
+$$;
+do $$
+declare tbl text;
+begin
+  foreach tbl in array array['operators','logs','events'] loop
+    execute format('drop trigger if exists write_audit on public.%s', tbl);
+    execute format('create trigger write_audit after insert or update or delete on public.%s for each row execute function public.write_audit()', tbl);
+  end loop;
+end $$;

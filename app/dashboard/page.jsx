@@ -1,10 +1,10 @@
 import ProtectedRoute from '@/src/components/ProtectedRoute';
-import Dashboard from '@/src/views/Dashboard';
+import Portfolio from '@/src/views/Portfolio';
 
 export default function Page() {
   return (
     <ProtectedRoute>
-      <Dashboard />
+      <Portfolio />
     </ProtectedRoute>
   );
 }

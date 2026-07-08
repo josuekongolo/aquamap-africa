@@ -2,21 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye, Pencil } from 'lucide-react';
+import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye, Pencil, ChevronLeft, HeartPulse, Trash2 } from 'lucide-react';
 import { rateFCR } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
+import { buildCycles, cycleLogs, cycleMetrics, cycleDay } from '../lib/cycles';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useRealtimeTable } from '../lib/useRealtimeTable';
 import { toast } from 'sonner';
-import FCRTool from '../components/FCRTool';
 import LogModal from '../components/LogModal';
 import EventModal from '../components/EventModal';
 import WeatherAdvisory from '../components/WeatherAdvisory';
 import FCRInsight from '../components/FCRInsight';
 import GrowthCurveChart from '../components/dashboard/GrowthCurveChart';
-import CommunityPanel from '../components/dashboard/CommunityPanel';
 import { LogsDataTable } from '../components/dashboard/LogsDataTable';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +38,6 @@ const SEVERITY_CLS = {
   high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-600',
 };
 
-// Human-readable detail chips from an event's structured `details` JSON.
 function eventDetails(e, fr) {
   const d = e.details || {};
   const out = [];
@@ -54,103 +52,110 @@ function eventDetails(e, fr) {
 function primarySpeciesKey(operator) {
   return SPECIES_KEY[operator?.species?.[0]] || 'Tilapia';
 }
-function computeMetrics(logs) {
-  let feed = 0, harvested = 0, stocked = 0;
-  for (const l of logs) {
-    if (l.type === 'feed') feed += Number(l.feed_kg) || 0;
-    else if (l.type === 'harvest') harvested += Number(l.kg_harvested) || 0;
-    else if (l.type === 'stocking') stocked += ((Number(l.fingerlings_count) || 0) * (Number(l.avg_weight_g) || 0)) / 1000;
-  }
-  const gain = harvested - stocked;
-  return { feed, harvested, stocked, gain, fcr: feed > 0 && gain > 0 ? feed / gain : null };
-}
 
-export default function Dashboard() {
+// Single-operator detail — everything the old dashboard showed, but scoped to a
+// selected production CYCLE (FCR over a whole lifetime is agronomically wrong).
+export default function OperatorDetail({ operatorId }) {
   const { t, lang } = useLang();
-  const { user, agent, configured } = useAuth();
+  const { configured } = useAuth();
+  const fr = lang === 'fr';
 
-  const [operators, setOperators] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [operator, setOperator] = useState(null);
   const [logs, setLogs] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(configured);
   const [modalOpen, setModalOpen] = useState(false);
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [eventTab, setEventTab] = useState('all');
+  const [cycleId, setCycleId] = useState(null);
   const [error, setError] = useState('');
 
-  const selected = operators.find(o => o.id === selectedId) || null;
-
-  const exportCsv = useCallback(() => {
-    if (!selected) return;
-    const cols = ['log_date', 'type', 'species', 'feed_kg', 'fingerlings_count', 'avg_weight_g', 'kg_harvested', 'kg_sold', 'price_per_kg', 'note'];
-    const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-    const rows = [cols.join(','), ...logs.map(l => cols.map(c => esc(l[c])).join(','))];
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `${(selected.name || 'operator').replace(/\s+/g, '_')}_logs.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }, [logs, selected]);
-
-  const loadOperators = useCallback(async () => {
-    if (!configured) return;
-    const { data, error } = await supabase.from('operators').select('*').order('created_at', { ascending: false });
-    if (error) setError(error.message);
-    else { setOperators(data || []); setSelectedId(prev => prev || data?.[0]?.id || null); }
+  const loadOperator = useCallback(async () => {
+    if (!configured) { setLoading(false); return; }
+    const { data, error } = await supabase.from('operators').select('*').eq('id', operatorId).single();
+    if (error) setError(error.message); else setOperator(data);
     setLoading(false);
-  }, [configured]);
+  }, [configured, operatorId]);
 
-  const loadLogs = useCallback(async (operatorId) => {
-    if (!configured || !operatorId) return;
+  const loadLogs = useCallback(async () => {
+    if (!configured) return;
     const { data } = await supabase.from('logs').select('*').eq('operator_id', operatorId).order('log_date', { ascending: false });
     setLogs(data || []);
-  }, [configured]);
+  }, [configured, operatorId]);
 
-  const loadEvents = useCallback(async (operatorId) => {
-    if (!configured || !operatorId) return;
+  const loadEvents = useCallback(async () => {
+    if (!configured) return;
     const { data } = await supabase.from('events').select('*').eq('operator_id', operatorId).order('event_date', { ascending: false });
     setEvents(data || []);
-  }, [configured]);
+  }, [configured, operatorId]);
+
+  const deleteLog = useCallback(async (log) => {
+    if (!window.confirm(fr ? 'Supprimer cette saisie ?' : 'Delete this log entry?')) return;
+    const { error } = await supabase.from('logs').delete().eq('id', log.id);
+    if (error) toast.error(error.message); else { toast.success(fr ? 'Saisie supprimée.' : 'Log deleted.'); loadLogs(); }
+  }, [fr, loadLogs]);
+
+  const deleteEvent = useCallback(async (ev) => {
+    if (!window.confirm(fr ? 'Supprimer cet événement ?' : 'Delete this event?')) return;
+    const { error } = await supabase.from('events').delete().eq('id', ev.id);
+    if (error) toast.error(error.message); else { toast.success(fr ? 'Événement supprimé.' : 'Event deleted.'); loadEvents(); }
+  }, [fr, loadEvents]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { loadOperators(); }, [loadOperators]);
+  useEffect(() => { loadOperator(); }, [loadOperator]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { loadLogs(selectedId); }, [selectedId, loadLogs]);
+  useEffect(() => { loadLogs(); }, [loadLogs]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { loadEvents(selectedId); }, [selectedId, loadEvents]);
+  useEffect(() => { loadEvents(); }, [loadEvents]);
 
-  // Live updates: operator list + logs + events for the selected operator (RLS-scoped).
-  useRealtimeTable('operators', setOperators, { enabled: configured });
-  useRealtimeTable('events', setEvents, {
-    enabled: configured && !!selectedId,
-    filter: selectedId ? `operator_id=eq.${selectedId}` : undefined,
-  });
+  useRealtimeTable('events', setEvents, { enabled: configured, filter: `operator_id=eq.${operatorId}` });
   useRealtimeTable('logs', setLogs, {
-    enabled: configured && !!selectedId,
-    filter: selectedId ? `operator_id=eq.${selectedId}` : undefined,
+    enabled: configured,
+    filter: `operator_id=eq.${operatorId}`,
     onEvent: ({ eventType, new: row }) => {
+      // Compute from fresh rows (avoid the stale-closure bug) via the updater.
       if (eventType !== 'INSERT' || row?.type !== 'harvest') return;
-      const m = computeMetrics([row, ...logs]);
-      if (m.fcr == null) return;
-      const r = rateFCR(primarySpeciesKey(selected), m.fcr);
-      if (r?.status === 'high') {
-        toast.warning(`${selected?.name || ''} — FCR ${m.fcr.toFixed(2)}`, {
-          description: lang === 'fr' ? 'Au-dessus de la plage optimale' : 'Above optimal range',
-        });
-      }
+      setLogs((prev) => {
+        const next = [row, ...prev.filter((l) => l.id !== row.id)];
+        const cyc = buildCycles(next);
+        const cur = cyc[cyc.length - 1] || null;
+        const m = cycleMetrics(next, events, cur);
+        if (m.fcr != null) {
+          const r = rateFCR(primarySpeciesKey(operator), m.fcr);
+          if (r?.status === 'high') {
+            toast.warning(`${operator?.name || ''} — FCR ${m.fcr.toFixed(2)}`, {
+              description: fr ? 'Au-dessus de la plage optimale' : 'Above optimal range',
+            });
+          }
+        }
+        return next;
+      });
     },
   });
 
-  const metrics = computeMetrics(logs);
-  const speciesKey = primarySpeciesKey(selected);
+  const cycles = buildCycles(logs);
+  const cycle = cycles.find((c) => c.id === cycleId) || cycles[cycles.length - 1] || null;
+  const speciesKey = cycle?.species ? (SPECIES_KEY[cycle.species] || cycle.species) : primarySpeciesKey(operator);
+  const metrics = cycleMetrics(logs, events, cycle);
   const rating = metrics.fcr != null ? rateFCR(speciesKey, metrics.fcr) : null;
+  const inCycleLogs = cycle ? cycleLogs(logs, cycle) : logs;
+  const dayN = cycleDay(cycle);
 
-  const fr = lang === 'fr';
-  // Aggregate logs by date into a real production time series (sum per day).
+  const exportCsv = () => {
+    if (!operator) return;
+    const cols = ['log_date', 'type', 'species', 'feed_kg', 'fingerlings_count', 'avg_weight_g', 'kg_harvested', 'kg_sold', 'price_per_kg', 'note'];
+    const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const rows = [cols.join(','), ...inCycleLogs.map((l) => cols.map((c) => esc(l[c])).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${(operator.name || 'operator').replace(/\s+/g, '_')}_cycle.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
+
   const seriesData = (() => {
     const byDate = {};
-    for (const l of logs) {
+    for (const l of inCycleLogs) {
       const d = l.log_date;
       if (!d) continue;
       const e = (byDate[d] ||= { date: d, feed: 0, harvest: 0, stocking: 0, sold: 0, revenue: 0 });
@@ -173,102 +178,100 @@ export default function Dashboard() {
     revenue: { label: fr ? 'Revenu (FCFA)' : 'Revenue', color: '#06b6d4' },
   };
 
+  if (!loading && !operator) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"><ChevronLeft className="size-4" /> {t.nav.dashboard}</Link>
+        <p className="mt-6 text-sm text-muted-foreground">{error || (fr ? 'Opérateur introuvable.' : 'Operator not found.')}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="@container/main max-w-7xl mx-auto px-4 py-8 space-y-6">
-      {modalOpen && selected && (
-        <LogModal operator={selected} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(selectedId); }} />
+      {modalOpen && operator && (
+        <LogModal operator={operator} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(); }} />
       )}
-      {eventModalOpen && selected && (
-        <EventModal operator={selected} onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); loadEvents(selectedId); }} />
+      {eventModalOpen && operator && (
+        <EventModal operator={operator} onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); loadEvents(); }} />
       )}
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold text-black">{t.dashboard.welcome} {agent?.full_name || user?.email}</h1>
-          {agent?.organization && <p className="text-muted-foreground text-sm">{agent.organization}</p>}
+          <Link href="/dashboard" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-1"><ChevronLeft className="size-4" /> {fr ? 'Portefeuille' : 'Portfolio'}</Link>
+          <h1 className="font-display text-3xl font-bold text-black">{operator?.name}</h1>
+          <p className="text-muted-foreground text-sm">{[operator?.region, operator?.country].filter(Boolean).join(', ')}</p>
         </div>
         <div className="flex items-center gap-2">
-          {operators.length > 0 && (
-            <Select value={selectedId || ''} onValueChange={setSelectedId}>
-              <SelectTrigger className="w-[220px]"><SelectValue placeholder={t.dashboard.myOperators} /></SelectTrigger>
-              <SelectContent>{operators.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+          {cycles.length > 1 && (
+            <Select value={cycle?.id || ''} onValueChange={setCycleId}>
+              <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {cycles.map((c, i) => (
+                  <SelectItem key={c.id} value={c.id}>{fr ? 'Cycle' : 'Cycle'} {i + 1} · {c.start}</SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           )}
-          {selected && (
-            <Link href={`/operators/${selected.id}/edit`} title={fr ? 'Modifier cet opérateur' : 'Edit this operator'}
-              className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
-              <Pencil className="size-4" /> <span className="hidden sm:inline">{fr ? 'Modifier' : 'Edit'}</span>
-            </Link>
-          )}
-          {selected && logs.length > 0 && (
+          <Link href={`/operators/${operatorId}/edit`} className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+            <Pencil className="size-4" /> <span className="hidden sm:inline">{fr ? 'Modifier' : 'Edit'}</span>
+          </Link>
+          {inCycleLogs.length > 0 && (
             <button onClick={exportCsv} className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
               <Download className="size-4" /> CSV
             </button>
           )}
-          <Link href="/register" className="text-white px-4 py-2 rounded-md text-sm font-semibold hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand)' }}>
-            <Plus className="size-4" /> <span className="hidden sm:inline">{t.dashboard.registerFirst.replace('+ ', '')}</span>
-          </Link>
         </div>
       </div>
 
       {!configured && <div className="text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-3"><AlertTriangle className="inline w-4 h-4 -mt-0.5" /> {t.auth.notConfigured}</div>}
-      {error && <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3">{error}</div>}
-      {configured && !loading && operators.length === 0 && (
-        <Card><CardContent className="py-10 text-center text-muted-foreground">{t.dashboard.noOperators}
-          <Link href="/register" className="block mt-3 font-medium" style={{ color: 'var(--brand)' }}>{t.dashboard.registerFirst}</Link></CardContent></Card>
-      )}
 
-      {selected && (
+      {operator && (
         <>
-          {/* Section cards */}
           <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
             <Kpi description={t.dashboard.fcr} value={metrics.fcr != null ? metrics.fcr.toFixed(2) : '—'}
               action={rating && <Badge variant="outline" style={{ color: rating.color, borderColor: rating.color }}>{t.dashboard[STATUS_LABEL[rating.status]]}</Badge>}
-              footerMain={<>{speciesKey} <SpeciesIcon name={speciesKey} className="size-4" /></>} footerSub={lang === 'fr' ? 'Référence FAO / SRAC' : 'FAO / SRAC baseline'} />
+              footerMain={<>{speciesKey} <SpeciesIcon name={speciesKey} className="size-4" /></>}
+              footerSub={cycle ? `${fr ? 'Cycle depuis' : 'Cycle since'} ${cycle.start}${dayN != null ? ` · ${fr ? 'jour' : 'day'} ${dayN}` : ''}` : (fr ? 'Aucun cycle' : 'No cycle')} />
             <Kpi description={t.dashboard.feedKg} value={`${Math.round(metrics.feed)} kg`}
               action={<Badge variant="outline"><Wheat className="size-3.5" /></Badge>}
-              footerMain={lang === 'fr' ? 'Total saisi' : 'Total logged'} footerSub={lang === 'fr' ? 'Aliments distribués' : 'Feed distributed'} />
+              footerMain={fr ? 'Aliments du cycle' : 'Cycle feed'} footerSub={fr ? 'Distribué' : 'Distributed'} />
             <Kpi description={t.dashboard.harvest} value={`${Math.round(metrics.harvested)} kg`}
               action={<Badge variant="outline"><PackageCheck className="size-3.5" /></Badge>}
-              footerMain={<>{lang === 'fr' ? 'Biomasse récoltée' : 'Harvested biomass'} <TrendingUp className="size-4" /></>} footerSub={`${Math.round(metrics.gain > 0 ? metrics.gain : 0)} kg ${lang === 'fr' ? 'gain net' : 'net gain'}`} />
-            <Kpi description={t.dashboard.species} value={speciesKey}
-              action={<Badge variant="outline"><SpeciesIcon name={speciesKey} className="size-3.5" /></Badge>}
-              footerMain={selected.region || '—'} footerSub={selected.country || ''} />
+              footerMain={<>{fr ? 'Récolté' : 'Harvested'} <TrendingUp className="size-4" /></>} footerSub={`${Math.round(metrics.gain > 0 ? metrics.gain : 0)} kg ${fr ? 'gain net' : 'net gain'}`} />
+            <Kpi description={fr ? 'Taux de survie' : 'Survival rate'} value={metrics.survivalPct != null ? `${metrics.survivalPct}%` : '—'}
+              action={<Badge variant="outline"><HeartPulse className="size-3.5" /></Badge>}
+              footerMain={metrics.stockedCount ? `${metrics.stockedCount.toLocaleString()} ${fr ? 'empoissonnés' : 'stocked'}` : '—'}
+              footerSub={metrics.mortality ? `${metrics.mortality.toLocaleString()} ${fr ? 'mortalités' : 'mortalities'}` : (fr ? 'Aucune mortalité' : 'No mortalities')} />
           </div>
 
-          {/* Interactive chart */}
           <ChartAreaInteractive data={seriesData} config={seriesConfig}
-            filename={`${(selected.name || 'operator').replace(/\s+/g, '_')}_production`}
-            title={lang === 'fr' ? 'Production dans le temps' : 'Production over time'}
-            description={lang === 'fr' ? 'Choisissez les indicateurs à afficher' : 'Choose which metrics to display'} />
+            filename={`${(operator.name || 'operator').replace(/\s+/g, '_')}_cycle`}
+            title={fr ? 'Production du cycle' : 'Cycle production'}
+            description={fr ? 'Choisissez les indicateurs à afficher' : 'Choose which metrics to display'} />
 
-          {/* Species growth curve (benchmark + actual samples) */}
-          <GrowthCurveChart speciesKey={speciesKey} logs={logs} events={events} fr={fr} />
+          <GrowthCurveChart speciesKey={speciesKey} logs={logs} events={events} fr={fr} cycle={cycle} />
 
-          {/* FCR insight + weather */}
           <div className="grid lg:grid-cols-2 gap-4">
             {metrics.fcr != null && (
               <Card><CardHeader><CardTitle>{t.dashboard.fcrGauge}</CardTitle></CardHeader>
                 <CardContent><FCRInsight speciesKey={speciesKey} fcr={metrics.fcr} /></CardContent></Card>
             )}
-            <WeatherAdvisory lat={selected.lat} lng={selected.lng} speciesKey={speciesKey} />
+            <WeatherAdvisory lat={operator.lat} lng={operator.lng} speciesKey={speciesKey} />
           </div>
 
-          {/* Logs data table */}
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle>{selected.name}</CardTitle>
+              <CardTitle>{fr ? 'Saisies du cycle' : 'Cycle logs'}</CardTitle>
               <CardAction>
                 <button onClick={() => setModalOpen(true)} className="text-white px-3 py-1.5 rounded-md text-sm font-medium hover:opacity-90 inline-flex items-center gap-1" style={{ backgroundColor: 'var(--brand)' }}>
                   <Plus className="size-4" /> {t.dashboard.addLog.replace('+ ', '')}
                 </button>
               </CardAction>
             </CardHeader>
-            <CardContent><LogsDataTable logs={logs} t={t} /></CardContent>
+            <CardContent><LogsDataTable logs={inCycleLogs} t={t} onDelete={deleteLog} /></CardContent>
           </Card>
 
-          {/* Events (mortality, treatment, water quality, sampling, observation) */}
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <div>
@@ -298,25 +301,29 @@ export default function Dashboard() {
                       <TableHead>{fr ? 'Date' : 'Date'}</TableHead>
                       <TableHead>{fr ? 'Gravité' : 'Severity'}</TableHead>
                       <TableHead>{fr ? 'Détails' : 'Details'}</TableHead>
+                      <TableHead className="w-10" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {(() => {
                       const rows = eventTab === 'all' ? events : events.filter((e) => e.type === eventTab);
                       if (rows.length === 0) {
-                        return <TableRow><TableCell colSpan={4} className="h-20 text-center text-muted-foreground">{fr ? 'Aucun événement.' : 'No events.'}</TableCell></TableRow>;
+                        return <TableRow><TableCell colSpan={5} className="h-20 text-center text-muted-foreground">{fr ? 'Aucun événement.' : 'No events.'}</TableCell></TableRow>;
                       }
                       return rows.map((e) => {
-                      const meta = EVENT_META[e.type] || { Icon: Eye, fr: e.type, en: e.type };
-                      const details = [...eventDetails(e, fr), e.description].filter(Boolean).join(' · ');
-                      return (
-                        <TableRow key={e.id}>
-                          <TableCell><span className="inline-flex items-center gap-1.5 font-medium"><meta.Icon className="size-3.5 text-[#0D6B8A]" /> {fr ? meta.fr : meta.en}</span></TableCell>
-                          <TableCell className="tabular-nums text-muted-foreground whitespace-nowrap">{e.event_date}</TableCell>
-                          <TableCell>{e.severity ? <Badge variant="outline" className={`border-transparent ${SEVERITY_CLS[e.severity] || ''}`}>{e.severity}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
-                          <TableCell className="text-muted-foreground">{details || '—'}</TableCell>
-                        </TableRow>
-                      );
+                        const meta = EVENT_META[e.type] || { Icon: Eye, fr: e.type, en: e.type };
+                        const details = [...eventDetails(e, fr), e.description].filter(Boolean).join(' · ');
+                        return (
+                          <TableRow key={e.id}>
+                            <TableCell><span className="inline-flex items-center gap-1.5 font-medium"><meta.Icon className="size-3.5 text-[#0D6B8A]" /> {fr ? meta.fr : meta.en}</span></TableCell>
+                            <TableCell className="tabular-nums text-muted-foreground whitespace-nowrap">{e.event_date}</TableCell>
+                            <TableCell>{e.severity ? <Badge variant="outline" className={`border-transparent ${SEVERITY_CLS[e.severity] || ''}`}>{e.severity}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                            <TableCell className="text-muted-foreground">{details || '—'}</TableCell>
+                            <TableCell>
+                              <button onClick={() => deleteEvent(e)} className="text-gray-300 hover:text-red-600" title={fr ? 'Supprimer' : 'Delete'}><Trash2 className="size-4" /></button>
+                            </TableCell>
+                          </TableRow>
+                        );
                       });
                     })()}
                   </TableBody>
@@ -326,11 +333,6 @@ export default function Dashboard() {
           </Card>
         </>
       )}
-
-      <FCRTool defaultSpecies={selected ? speciesKey : 'Tilapia'} key={lang} />
-
-      {/* Sector-wide anonymized aggregates (DACMS transparency, I.2.A.4) */}
-      <CommunityPanel fr={fr} />
     </div>
   );
 }

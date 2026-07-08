@@ -7,6 +7,7 @@ import { knowledge, knowledgeCategories } from '../data/knowledge';
 import { KnowledgeIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
 import ResearchPanel from '../components/ResearchPanel';
+import FCRTool from '../components/FCRTool';
 
 const PAGE_SIZE = 20;
 
@@ -117,6 +118,11 @@ export default function Knowledge() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Species-aware FCR calculator (interactive tool) */}
+      <div className="mt-10">
+        <FCRTool defaultSpecies="Tilapia" key={lang} />
       </div>
 
       {/* Live related research (CrossRef) */}
