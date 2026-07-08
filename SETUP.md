@@ -11,8 +11,11 @@ components that need Supabase configured.
    Africa (e.g. `eu-west` / London or `eu-central`).
 2. Once it's ready, open **SQL Editor → New query**, paste the entire contents
    of [`supabase/schema.sql`](supabase/schema.sql), and **Run**. This creates
-   the `agents`, `operators`, `logs`, `events` tables, the signup trigger, and
-   Row-Level Security policies.
+   the `agents`, `operators`, `logs`, `events` tables, the co-management
+   tables (`groups`, `group_members`, `meetings`, `plans`, `plan_indicators`,
+   `incidents`, `zones`, `assessments` + the `community_overview()` RPC), the
+   signup trigger, and Row-Level Security policies. The file is idempotent —
+   re-run it in full whenever it gains new sections.
 3. Open **Project Settings → API** and copy:
    - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
    - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

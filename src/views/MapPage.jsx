@@ -5,8 +5,9 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Command } from 'cmdk';
 import { ResponsiveContainer, AreaChart, Area, Tooltip } from 'recharts';
-import { Layers, X, MapPin, Building2, Target, ExternalLink, ChevronDown, ChevronLeft, Search, Globe, Phone, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { Layers, X, MapPin, Building2, Target, ExternalLink, ChevronDown, ChevronLeft, Search, Globe, Phone, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Hexagon, Users } from 'lucide-react';
 import { africaCountries as countries } from '../data/africaCountries';
+import { ZONE_TYPES } from '../data/dacms';
 import { SpeciesIcon } from '../lib/icons';
 import { countryFromAddress } from '../lib/africa';
 import WeatherAdvisory from '../components/WeatherAdvisory';
@@ -34,6 +35,7 @@ export default function MapPage({ liveProduction = {} }) {
   const fr = lang === 'fr';
 
   const [operators, setOperators] = useState([]);
+  const [zones, setZones] = useState([]);
   const [sites, setSites] = useState([]);
   const [layers, setLayers] = useState(new Set(['countries', 'sites']));
   const [basemap, setBasemap] = useState('osm');
@@ -55,13 +57,22 @@ export default function MapPage({ liveProduction = {} }) {
   const [siteCount, setSiteCount] = useState(SITE_PAGE);
   const [focus, setFocus] = useState(null); // [lng, lat] to fly to
 
-  // Operators only for authenticated agents.
+  // Operators + co-management zones only for authenticated agents (RLS-scoped).
   useEffect(() => {
     if (!isSupabaseConfigured || !user) return;
     let active = true;
     (async () => {
-      const { data } = await supabase.from('operators').select('*').order('created_at', { ascending: false });
-      if (active) { setOperators(data || []); setLayers(prev => new Set(prev).add('operators')); }
+      const [{ data }, { data: zs }] = await Promise.all([
+        supabase.from('operators').select('*').order('created_at', { ascending: false }),
+        supabase.from('zones').select('*, groups(name)').order('created_at'),
+      ]);
+      if (!active) return;
+      setOperators(data || []);
+      setZones((zs || []).map((z) => ({
+        ...z,
+        color: (ZONE_TYPES.find((t) => t.id === z.zone_type) || ZONE_TYPES[ZONE_TYPES.length - 1]).color,
+      })));
+      setLayers(prev => { const next = new Set(prev); next.add('operators'); next.add('zones'); return next; });
     })();
     return () => { active = false; };
   }, [user]);
@@ -125,6 +136,8 @@ export default function MapPage({ liveProduction = {} }) {
     (!siteHasPhone || !!s.phone) &&
     (!siteHasWebsite || !!s.website));
 
+  const zoneAnchor = (z) => z.geojson?.coordinates?.[0]?.[0] || null; // [lng, lat]
+  const visZones = layers.has('zones') ? zones.filter(z => { const a = zoneAnchor(z); return a && inB(a[1], a[0]); }) : [];
   const visOperators = layers.has('operators') ? operators.filter(o => inB(o.lat, o.lng)) : [];
   const visSites = layers.has('sites') ? filteredSites.filter(s => inB(s.lat, s.lng)) : [];
   const visCountries = layers.has('countries') ? countries.filter(c => inB(c.coords[0], c.coords[1])) : [];
@@ -141,7 +154,10 @@ export default function MapPage({ liveProduction = {} }) {
   const siteFiltersActive = siteType !== 'all' || siteCountry !== 'all' || siteHasPhone || siteHasWebsite;
 
   const LAYER_DEFS = [
-    ...(user ? [{ id: 'operators', label: fr ? 'Opérateurs' : 'Operators', color: '#0D6B8A', count: operators.length }] : []),
+    ...(user ? [
+      { id: 'operators', label: fr ? 'Opérateurs' : 'Operators', color: '#0D6B8A', count: operators.length },
+      { id: 'zones', label: fr ? 'Zones de cogestion' : 'Co-management zones', color: '#6366f1', count: zones.length },
+    ] : []),
     { id: 'sites', label: fr ? 'Sites aquacoles' : 'Aquaculture sites', color: '#F4A261', count: sites.length },
     { id: 'countries', label: fr ? 'Données par pays' : 'Country data', color: '#00A878', count: countries.length },
   ];
@@ -218,7 +234,7 @@ export default function MapPage({ liveProduction = {} }) {
 
       {/* ─── Center: map ─── */}
       <div className="flex-1 relative">
-        <ExploreMap operators={operators} sites={filteredSites} countries={countries} layers={layers} basemap={basemap} forecast={forecast} focus={focus} onSelect={onSelect} onBounds={onBounds} />
+        <ExploreMap operators={operators} sites={filteredSites} countries={countries} zones={zones} layers={layers} basemap={basemap} forecast={forecast} focus={focus} onSelect={onSelect} onBounds={onBounds} />
         {/* Mobile: open drawers */}
         <button onClick={() => setLeftOpen(true)} className="md:hidden absolute top-3 left-3 z-[1000] bg-white rounded-lg shadow px-3 py-2 text-sm font-medium flex items-center gap-1.5" style={{ color: '#0D6B8A' }}>
           <Layers className="w-4 h-4" /> {fr ? 'Couches' : 'Layers'}
@@ -309,6 +325,20 @@ export default function MapPage({ liveProduction = {} }) {
                         <SpeciesIcon name={SPECIES_KEY[o.species?.[0]] || 'Tilapia'} className="w-4 h-4 text-[#0D6B8A] shrink-0" />
                         <span className="text-sm text-gray-700 truncate">{o.name}</span>
                         <span className="text-xs text-gray-400 ml-auto truncate">{o.region}</span>
+                      </button>
+                    ))}
+                </Section>
+              )}
+              {user && (
+                <Section title={`${fr ? 'Zones de cogestion' : 'Co-management zones'} (${visZones.length})`} show={layers.has('zones')}>
+                  {visZones.length === 0
+                    ? <Empty fr={fr} />
+                    : visZones.map(z => (
+                      <button key={z.id} onClick={() => { onSelect({ kind: 'zone', data: z }); const a = zoneAnchor(z); if (a) setFocus(a); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-50 flex items-center gap-2">
+                        <Hexagon className="w-4 h-4 shrink-0" style={{ color: z.color }} />
+                        <span className="text-sm text-gray-700 truncate">{z.name}</span>
+                        <span className="text-xs text-gray-400 ml-auto truncate">{z.groups?.name}</span>
                       </button>
                     ))}
                 </Section>
@@ -463,6 +493,40 @@ function FeatureDetail({ f, fr, liveProduction }) {
         )}
         <Link href="/dashboard" className="mt-5 inline-block text-sm font-semibold" style={{ color: '#0D6B8A' }}>
           {fr ? 'Voir au tableau de bord →' : 'Open in dashboard →'}
+        </Link>
+      </div>
+    );
+  }
+  if (f.kind === 'zone') {
+    const z = f.data;
+    const meta = ZONE_TYPES.find((t) => t.id === z.zone_type) || ZONE_TYPES[ZONE_TYPES.length - 1];
+    return (
+      <div className="p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Hexagon className="w-5 h-5" style={{ color: z.color || '#0D6B8A' }} />
+          <h3 className="font-bold text-black">{z.name}</h3>
+        </div>
+        <span className="text-[11px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${z.color}1a`, color: z.color }}>
+          {fr ? meta.fr : meta.en}
+        </span>
+        <dl className="space-y-2 text-sm mt-4">
+          {z.groups?.name && (
+            <Row label={fr ? 'Groupe' : 'Group'} value={
+              <span className="inline-flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {z.groups.name}</span>
+            } />
+          )}
+          {z.geojson?.coordinates?.[0]?.length > 1 && (
+            <Row label={fr ? 'Sommets' : 'Vertices'} value={z.geojson.coordinates[0].length - 1} />
+          )}
+          {z.note && <Row label={fr ? 'Note' : 'Note'} value={z.note} />}
+        </dl>
+        <p className="text-xs text-gray-400 mt-4">
+          {fr
+            ? 'Zone délimitée selon l’indicateur FAO DACMS I.1.2.1 (cartes SIG des limites cogérées).'
+            : 'Boundary demarcated per FAO DACMS indicator I.1.2.1 (GIS maps of co-managed limits).'}
+        </p>
+        <Link href={z.group_id ? `/groups/${z.group_id}` : '/groups'} className="mt-4 inline-block text-sm font-semibold" style={{ color: '#0D6B8A' }}>
+          {fr ? 'Voir le groupe →' : 'Open the group →'}
         </Link>
       </div>
     );

@@ -16,6 +16,7 @@ import EventModal from '../components/EventModal';
 import WeatherAdvisory from '../components/WeatherAdvisory';
 import FCRInsight from '../components/FCRInsight';
 import GrowthCurveChart from '../components/dashboard/GrowthCurveChart';
+import CommunityPanel from '../components/dashboard/CommunityPanel';
 import { LogsDataTable } from '../components/dashboard/LogsDataTable';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -321,6 +322,9 @@ export default function Dashboard() {
       )}
 
       <FCRTool defaultSpecies={selected ? speciesKey : 'Tilapia'} key={lang} />
+
+      {/* Sector-wide anonymized aggregates (DACMS transparency, I.2.A.4) */}
+      <CommunityPanel fr={fr} />
     </div>
   );
 }

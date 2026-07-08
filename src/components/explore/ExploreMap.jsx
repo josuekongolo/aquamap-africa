@@ -40,6 +40,7 @@ const FIELDS = [
 
 const LAYER_MAP = {
   operators: ['op-clusters', 'op-cluster-count', 'op-point'],
+  zones: ['zone-fill', 'zone-line'],
   sites: ['site-clusters', 'site-cluster-count', 'site-point'],
   waves: ['fld-waves'],
   sst: ['fld-sst'],
@@ -110,6 +111,13 @@ function sitesGeoJSON(sites) {
       .map((s) => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [s.lng, s.lat] }, properties: { id: s.id } })),
   };
 }
+function zonesGeoJSON(zones) {
+  return {
+    type: 'FeatureCollection',
+    features: zones.filter((z) => z.geojson?.type === 'Polygon')
+      .map((z) => ({ type: 'Feature', geometry: z.geojson, properties: { id: z.id, color: z.color || BRAND } })),
+  };
+}
 function countryEl(flag, color) {
   const el = document.createElement('div');
   el.style.cssText =
@@ -154,18 +162,20 @@ function Legend({ layers, fr }) {
   );
 }
 
-export default function ExploreMap({ operators = [], sites = [], countries = [], layers, basemap = 'osm', forecast = null, focus = null, onSelect, onBounds }) {
+export default function ExploreMap({ operators = [], sites = [], countries = [], zones = [], layers, basemap = 'osm', forecast = null, focus = null, onSelect, onBounds }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const countryMarkersRef = useRef([]);
   const opIndexRef = useRef(new Map());
   const siteIndexRef = useRef(new Map());
+  const zoneIndexRef = useRef(new Map());
   const cb = useRef({ onSelect, onBounds });
 
   useEffect(() => {
     cb.current = { onSelect, onBounds };
     opIndexRef.current = new Map(operators.map((o) => [o.id, o]));
     siteIndexRef.current = new Map(sites.map((s) => [s.id, s]));
+    zoneIndexRef.current = new Map(zones.map((z) => [z.id, z]));
   });
 
   useEffect(() => {
@@ -220,6 +230,28 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
           map.addSource(f.src, { type: 'image', url: TRANSPARENT_PNG, coordinates: DEFAULT_COORDS });
           map.addLayer({ id: f.src, type: 'raster', source: f.src, layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.72, 'raster-resampling': 'linear' } });
         }
+      }
+
+      // ── co-management zones (polygons, under the point layers) ──
+      if (!map.getSource('zones')) {
+        map.addSource('zones', { type: 'geojson', data: zonesGeoJSON([...zoneIndexRef.current.values()]) });
+        map.addLayer({
+          id: 'zone-fill', type: 'fill', source: 'zones',
+          paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 },
+        });
+        map.addLayer({
+          id: 'zone-line', type: 'line', source: 'zones',
+          paint: { 'line-color': ['get', 'color'], 'line-width': 2 },
+        });
+        map.on('click', 'zone-fill', (e) => {
+          // Point markers on top take precedence over the polygon beneath them.
+          const hit = map.queryRenderedFeatures(e.point, { layers: ['op-point', 'op-clusters', 'site-point', 'site-clusters'].filter((id) => map.getLayer(id)) });
+          if (hit.length) return;
+          const z = zoneIndexRef.current.get(e.features[0].properties.id);
+          if (z) cb.current.onSelect?.({ kind: 'zone', data: z });
+        });
+        map.on('mouseenter', 'zone-fill', () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', 'zone-fill', () => { map.getCanvas().style.cursor = ''; });
       }
 
       // ── operators (clustered) ──
@@ -313,6 +345,8 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
   useEffect(() => { mapRef.current?.getSource('operators')?.setData(operatorsGeoJSON(operators)); }, [operators]);
 
   useEffect(() => { mapRef.current?.getSource('sites')?.setData(sitesGeoJSON(sites)); }, [sites]);
+
+  useEffect(() => { mapRef.current?.getSource('zones')?.setData(zonesGeoJSON(zones)); }, [zones]);
 
   useEffect(() => {
     const map = mapRef.current;
