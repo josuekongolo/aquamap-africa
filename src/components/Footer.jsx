@@ -10,6 +10,9 @@ export default function Footer() {
   const fr = lang === 'fr';
   const year = new Date().getFullYear();
 
+  // Signed-in agents are in work mode — no marketing footer.
+  if (user) return null;
+
   const platform = [
     { label: t.nav.home, href: '/' },
     { label: t.nav.map, href: '/map' },

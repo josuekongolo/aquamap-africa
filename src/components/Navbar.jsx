@@ -43,15 +43,24 @@ export default function Navbar() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- close mobile menu on navigation
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  const links = [
-    { to: '/', label: t.nav.home },
-    { to: '/map', label: t.nav.map },
-    { to: '/knowledge', label: t.nav.knowledge },
-    { to: '/suppliers', label: t.nav.suppliers },
-    { to: '/about', label: t.nav.about },
-    ...(user ? [{ to: '/dashboard', label: t.nav.dashboard }] : []),
-    ...(isAdmin ? [{ to: '/admin', label: t.nav.admin }] : []),
-  ];
+  // Signed-in agents get a work-focused bar (no Home/About — the brand mark
+  // already links home); visitors get the full marketing nav.
+  const links = user
+    ? [
+        { to: '/dashboard', label: t.nav.dashboard },
+        { to: '/groups', label: t.nav.groups },
+        { to: '/map', label: t.nav.map },
+        { to: '/knowledge', label: t.nav.knowledge },
+        { to: '/suppliers', label: t.nav.suppliers },
+        ...(isAdmin ? [{ to: '/admin', label: t.nav.admin }] : []),
+      ]
+    : [
+        { to: '/', label: t.nav.home },
+        { to: '/map', label: t.nav.map },
+        { to: '/knowledge', label: t.nav.knowledge },
+        { to: '/suppliers', label: t.nav.suppliers },
+        { to: '/about', label: t.nav.about },
+      ];
 
   const isActive = (to) => (to === '/' ? pathname === '/' : pathname.startsWith(to));
 

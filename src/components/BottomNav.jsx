@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Map, BookOpen, Store, LayoutDashboard, LogIn } from 'lucide-react';
+import { Home, Map, BookOpen, Store, LayoutDashboard, LogIn, Users } from 'lucide-react';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,17 +14,22 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const L = lang === 'fr'
-    ? { home: 'Accueil', map: 'Carte', know: 'Docs', sup: 'Fourn.', dash: 'Tableau', login: 'Connexion' }
-    : { home: 'Home', map: 'Map', know: 'Docs', sup: 'Suppliers', dash: 'Board', login: 'Sign in' };
+    ? { home: 'Accueil', map: 'Carte', know: 'Docs', sup: 'Fourn.', dash: 'Tableau', groups: 'Groupes', login: 'Connexion' }
+    : { home: 'Home', map: 'Map', know: 'Docs', sup: 'Suppliers', dash: 'Board', groups: 'Groups', login: 'Sign in' };
 
   const items = [
     { href: '/', Icon: Home, label: L.home },
     { href: '/map', Icon: Map, label: L.map },
     { href: '/knowledge', Icon: BookOpen, label: L.know },
-    { href: '/suppliers', Icon: Store, label: L.sup },
-    user
-      ? { href: '/dashboard', Icon: LayoutDashboard, label: L.dash }
-      : { href: '/login', Icon: LogIn, label: L.login },
+    ...(user
+      ? [
+          { href: '/groups', Icon: Users, label: L.groups },
+          { href: '/dashboard', Icon: LayoutDashboard, label: L.dash },
+        ]
+      : [
+          { href: '/suppliers', Icon: Store, label: L.sup },
+          { href: '/login', Icon: LogIn, label: L.login },
+        ]),
   ];
 
   return (
