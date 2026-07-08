@@ -2,8 +2,9 @@
 // Cache-first for Next static assets; network-first for navigations with an
 // offline fallback to the cached home shell. Cross-origin (Supabase, weather,
 // World Bank, Semantic Scholar) is never intercepted.
-const CACHE = 'aquamap-v1';
-const SHELL = ['/'];
+const CACHE = 'aquamap-v2';
+// Field-critical routes precached so the app opens offline where agents work.
+const SHELL = ['/', '/register', '/dashboard', '/groups', '/login'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

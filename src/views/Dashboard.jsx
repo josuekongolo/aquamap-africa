@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye } from 'lucide-react';
+import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye, Pencil } from 'lucide-react';
 import { rateFCR } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
@@ -194,6 +194,12 @@ export default function Dashboard() {
               <SelectTrigger className="w-[220px]"><SelectValue placeholder={t.dashboard.myOperators} /></SelectTrigger>
               <SelectContent>{operators.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
             </Select>
+          )}
+          {selected && (
+            <Link href={`/operators/${selected.id}/edit`} title={fr ? 'Modifier cet opérateur' : 'Edit this operator'}
+              className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+              <Pencil className="size-4" /> <span className="hidden sm:inline">{fr ? 'Modifier' : 'Edit'}</span>
+            </Link>
           )}
           {selected && logs.length > 0 && (
             <button onClick={exportCsv} className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
