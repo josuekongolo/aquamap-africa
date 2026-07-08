@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye, Pencil, ChevronLeft, HeartPulse, Trash2 } from 'lucide-react';
+import { Wheat, PackageCheck, Plus, TrendingUp, AlertTriangle, Download, Skull, Pill, Droplets, Ruler, Eye, Pencil, ChevronLeft, HeartPulse, Trash2, Layers, X, RefreshCw } from 'lucide-react';
 import { rateFCR, speciesBenchmarks } from '../data/species';
 import { SpeciesIcon } from '../lib/icons';
-import { buildCycles, cycleLogs, cycleMetrics, cycleDay, biomassEstimate } from '../lib/cycles';
+import { buildCycles, cyclesFromRows, cycleLogs, cycleMetrics, cycleDay, biomassEstimate } from '../lib/cycles';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -16,6 +16,7 @@ import EventModal from '../components/EventModal';
 import WeatherAdvisory from '../components/WeatherAdvisory';
 import FCRInsight from '../components/FCRInsight';
 import GrowthCurveChart from '../components/dashboard/GrowthCurveChart';
+import FeedingGuide from '../components/FeedingGuide';
 import { LogsDataTable } from '../components/dashboard/LogsDataTable';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,11 +64,13 @@ export default function OperatorDetail({ operatorId }) {
   const [operator, setOperator] = useState(null);
   const [logs, setLogs] = useState([]);
   const [events, setEvents] = useState([]);
+  const [cycleRows, setCycleRows] = useState([]);
   const [loading, setLoading] = useState(configured);
   const [modalOpen, setModalOpen] = useState(false);
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [eventTab, setEventTab] = useState('all');
   const [cycleId, setCycleId] = useState(null);
+  const [pondsOpen, setPondsOpen] = useState(false);
   const [error, setError] = useState('');
 
   const loadOperator = useCallback(async () => {
@@ -89,6 +92,12 @@ export default function OperatorDetail({ operatorId }) {
     setEvents(data || []);
   }, [configured, operatorId]);
 
+  const loadCycles = useCallback(async () => {
+    if (!configured) return;
+    const { data } = await supabase.from('cycles').select('*').eq('operator_id', operatorId).order('stocked_on', { ascending: false });
+    setCycleRows(data || []);
+  }, [configured, operatorId]);
+
   const deleteLog = useCallback(async (log) => {
     if (!window.confirm(fr ? 'Supprimer cette saisie ?' : 'Delete this log entry?')) return;
     const { error } = await supabase.from('logs').delete().eq('id', log.id);
@@ -107,6 +116,8 @@ export default function OperatorDetail({ operatorId }) {
   useEffect(() => { loadLogs(); }, [loadLogs]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadEvents(); }, [loadEvents]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadCycles(); }, [loadCycles]);
 
   useRealtimeTable('events', setEvents, { enabled: configured, filter: `operator_id=eq.${operatorId}` });
   useRealtimeTable('logs', setLogs, {
@@ -133,7 +144,8 @@ export default function OperatorDetail({ operatorId }) {
     },
   });
 
-  const cycles = buildCycles(logs);
+  // Prefer explicit cycle rows (multi-pond, labels); fall back to derived.
+  const cycles = cycleRows.length ? cyclesFromRows(cycleRows, logs) : buildCycles(logs);
   const cycle = cycles.find((c) => c.id === cycleId) || cycles[cycles.length - 1] || null;
   const speciesKey = cycle?.species ? (SPECIES_KEY[cycle.species] || cycle.species) : primarySpeciesKey(operator);
   const metrics = cycleMetrics(logs, events, cycle);
@@ -191,10 +203,16 @@ export default function OperatorDetail({ operatorId }) {
   return (
     <div className="@container/main max-w-7xl mx-auto px-4 py-8 space-y-6">
       {modalOpen && operator && (
-        <LogModal operator={operator} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(); }} />
+        <LogModal operator={operator} cycleId={cycle?.explicit ? cycle.id : null}
+          onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); loadLogs(); loadCycles(); }} />
       )}
       {eventModalOpen && operator && (
-        <EventModal operator={operator} onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); loadEvents(); }} />
+        <EventModal operator={operator} cycleId={cycle?.explicit ? cycle.id : null}
+          onClose={() => setEventModalOpen(false)} onSaved={() => { setEventModalOpen(false); loadEvents(); }} />
+      )}
+      {pondsOpen && operator && (
+        <PondsManager operator={operator} user={user} fr={fr} cycles={cycleRows}
+          onClose={() => setPondsOpen(false)} onChanged={loadCycles} />
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -206,14 +224,19 @@ export default function OperatorDetail({ operatorId }) {
         <div className="flex items-center gap-2">
           {cycles.length > 1 && (
             <Select value={cycle?.id || ''} onValueChange={setCycleId}>
-              <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {cycles.map((c, i) => (
-                  <SelectItem key={c.id} value={c.id}>{fr ? 'Cycle' : 'Cycle'} {i + 1} · {c.start}</SelectItem>
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.pondLabel || `${fr ? 'Cycle' : 'Cycle'} ${i + 1}`} · {c.start}{c.closed ? ` · ${fr ? 'clos' : 'closed'}` : ''}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
+          <button onClick={() => setPondsOpen(true)} className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+            <Layers className="size-4" /> <span className="hidden sm:inline">{fr ? 'Étangs' : 'Ponds'}</span>
+          </button>
           <Link href={`/operators/${operatorId}/edit`} className="px-3 py-2 rounded-md text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
             <Pencil className="size-4" /> <span className="hidden sm:inline">{fr ? 'Modifier' : 'Edit'}</span>
           </Link>
@@ -288,6 +311,8 @@ export default function OperatorDetail({ operatorId }) {
             description={fr ? 'Choisissez les indicateurs à afficher' : 'Choose which metrics to display'} />
 
           <GrowthCurveChart speciesKey={speciesKey} logs={logs} events={events} fr={fr} cycle={cycle} />
+
+          <FeedingGuide speciesKey={speciesKey} fr={fr} />
 
           <div className="grid lg:grid-cols-2 gap-4">
             {metrics.fcr != null && (
@@ -370,6 +395,80 @@ export default function OperatorDetail({ operatorId }) {
           </Card>
         </>
       )}
+    </div>
+  );
+}
+
+// Pond / cycle management: label ponds, open a new cycle, close a cycle.
+function PondsManager({ operator, user, fr, cycles, onClose, onChanged }) {
+  const [label, setLabel] = useState('');
+  const [species, setSpecies] = useState(operator.species?.[0] ? (SPECIES_KEY[operator.species[0]] || 'Tilapia') : 'Tilapia');
+  const [stockedOn, setStockedOn] = useState(new Date().toISOString().slice(0, 10));
+  const [fingerlings, setFingerlings] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function addCycle() {
+    setError(''); setBusy(true);
+    const { error } = await supabase.from('cycles').insert({
+      operator_id: operator.id, created_by: user.id,
+      pond_label: label || null, species, stocked_on: stockedOn,
+      fingerlings: fingerlings ? Number(fingerlings) : null,
+    });
+    setBusy(false);
+    if (error) { setError(error.message); return; }
+    setLabel(''); setFingerlings(''); onChanged();
+  }
+  async function toggleClosed(c) {
+    const { error } = await supabase.from('cycles').update({ closed_on: c.closed_on ? null : new Date().toISOString().slice(0, 10) }).eq('id', c.id);
+    if (error) setError(error.message); else onChanged();
+  }
+  async function saveLabel(c, value) {
+    const { error } = await supabase.from('cycles').update({ pond_label: value || null }).eq('id', c.id);
+    if (error) setError(error.message); else onChanged();
+  }
+
+  const input = 'border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400';
+  return (
+    <div className="fixed inset-0 z-[1200] bg-black/40 flex items-start justify-center pt-16 px-4 overflow-y-auto" onClick={onClose}>
+      <Card className="w-full max-w-lg mb-16" onClick={(e) => e.stopPropagation()}>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2"><Layers className="size-4" style={{ color: 'var(--brand)' }} /> {fr ? 'Étangs / cycles' : 'Ponds / cycles'}</CardTitle>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700"><X className="size-5" /></button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">{fr ? 'Un cycle = un lot empoissonné dans un étang. Plusieurs étangs peuvent tourner en parallèle.' : 'A cycle = one batch stocked in a pond. Several ponds can run in parallel.'}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <input className={input} placeholder={fr ? 'Étang (ex : Étang 1)' : 'Pond (e.g. Pond 1)'} value={label} onChange={(e) => setLabel(e.target.value)} />
+            <select className={`${input} bg-white`} value={species} onChange={(e) => setSpecies(e.target.value)}>
+              {['Tilapia', 'Silure', 'Crevette', 'Carpe'].map((s) => <option key={s}>{s}</option>)}
+            </select>
+            <input type="date" className={input} value={stockedOn} onChange={(e) => setStockedOn(e.target.value)} />
+            <input type="number" className={input} placeholder={fr ? 'Alevins' : 'Fingerlings'} value={fingerlings} onChange={(e) => setFingerlings(e.target.value)} />
+          </div>
+          <button onClick={addCycle} disabled={busy}
+            className="inline-flex items-center gap-1.5 text-white text-sm font-medium px-3 py-1.5 rounded-md hover:opacity-90 disabled:opacity-60" style={{ backgroundColor: 'var(--brand)' }}>
+            {busy ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />} {fr ? 'Nouveau cycle' : 'New cycle'}
+          </button>
+          {error && <div className="text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2">{error}</div>}
+
+          <div className="space-y-1.5 border-t pt-3">
+            {cycles.length === 0 && <p className="text-sm text-muted-foreground">{fr ? 'Aucun cycle.' : 'No cycles.'}</p>}
+            {cycles.map((c) => (
+              <div key={c.id} className="flex items-center gap-2 text-sm">
+                <input defaultValue={c.pond_label || ''} placeholder={fr ? 'Étang…' : 'Pond…'} key={`${c.id}-${c.pond_label}`}
+                  onBlur={(e) => { if (e.target.value !== (c.pond_label || '')) saveLabel(c, e.target.value); }}
+                  className="flex-1 border border-gray-200 rounded-md px-2 py-1" />
+                <span className="text-muted-foreground tabular-nums shrink-0">{c.species || '—'} · {c.stocked_on}</span>
+                <button onClick={() => toggleClosed(c)}
+                  className={`text-xs px-2 py-1 rounded-full shrink-0 ${c.closed_on ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'}`}>
+                  {c.closed_on ? (fr ? 'Clos' : 'Closed') : (fr ? 'Ouvert' : 'Open')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

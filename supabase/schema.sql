@@ -827,3 +827,75 @@ end;
 $$;
 revoke all on function public.reassign_agent_data(uuid, uuid) from public;
 grant execute on function public.reassign_agent_data(uuid, uuid) to authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 13. PRODUCTION CYCLES / PONDS
+--     Until now cycles were DERIVED client-side from stocking-log dates. This
+--     makes them explicit (an operator can run several ponds/batches at once,
+--     which stocking-date derivation cannot represent) while staying backward
+--     compatible: logs.cycle_id is nullable and the app still falls back to
+--     derived cycles when it's null. Same org-scoped ownership as everything else.
+
+create table if not exists public.cycles (
+  id           uuid primary key default gen_random_uuid(),
+  operator_id  uuid not null references public.operators (id) on delete cascade,
+  created_by   uuid not null references public.agents (id) on delete restrict,
+  org_id       uuid references public.organizations (id),
+  pond_label   text,                       -- e.g. "Étang 1", "Cage A"
+  species      text,
+  stocked_on   date,
+  closed_on    date,                        -- null = open cycle
+  fingerlings  integer,
+  note         text,
+  created_at   timestamptz not null default now()
+);
+create index if not exists cycles_operator_idx on public.cycles (operator_id);
+create index if not exists cycles_org_idx on public.cycles (org_id);
+
+alter table public.logs   add column if not exists cycle_id uuid references public.cycles (id) on delete set null;
+alter table public.events add column if not exists cycle_id uuid references public.cycles (id) on delete set null;
+create index if not exists logs_cycle_idx   on public.logs (cycle_id);
+create index if not exists events_cycle_idx on public.events (cycle_id);
+
+-- 13a. Backfill: one cycle per existing stocking log, then attach each log/event
+--      to the cycle whose [stocked_on, next stocking) window contains its date.
+do $$
+declare r record;
+begin
+  -- Only backfill once (skip if any cycle already exists).
+  if not exists (select 1 from public.cycles) then
+    insert into public.cycles (operator_id, created_by, org_id, species, stocked_on, fingerlings)
+      select operator_id, created_by, org_id, species, log_date, fingerlings_count
+      from public.logs where type = 'stocking' and log_date is not null;
+
+    -- Attach logs to the latest cycle whose stocked_on <= the log's date.
+    for r in select id, operator_id, log_date from public.logs loop
+      update public.logs l set cycle_id = (
+        select c.id from public.cycles c
+        where c.operator_id = r.operator_id and c.stocked_on <= r.log_date
+        order by c.stocked_on desc limit 1
+      ) where l.id = r.id;
+    end loop;
+    for r in select id, operator_id, event_date from public.events loop
+      update public.events e set cycle_id = (
+        select c.id from public.cycles c
+        where c.operator_id = r.operator_id and c.stocked_on <= r.event_date
+        order by c.stocked_on desc limit 1
+      ) where e.id = r.id;
+    end loop;
+  end if;
+end $$;
+
+-- 13b. Org stamping + RLS (same pattern as section 12).
+drop trigger if exists stamp_org_id on public.cycles;
+create trigger stamp_org_id before insert on public.cycles for each row execute function public.stamp_org_id();
+
+alter table public.cycles enable row level security;
+drop policy if exists cycles_org_read on public.cycles;
+drop policy if exists cycles_org_insert on public.cycles;
+drop policy if exists cycles_org_update on public.cycles;
+drop policy if exists cycles_org_delete on public.cycles;
+create policy cycles_org_read on public.cycles for select using (org_id = public.current_org() or public.is_admin());
+create policy cycles_org_insert on public.cycles for insert with check (created_by = auth.uid() and public.can_write() and (org_id is null or org_id = public.current_org()));
+create policy cycles_org_update on public.cycles for update using (org_id = public.current_org() and public.can_write());
+create policy cycles_org_delete on public.cycles for delete using (org_id = public.current_org() and public.can_write());

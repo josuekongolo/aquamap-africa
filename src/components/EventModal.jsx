@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 import { enqueue, notifyQueued } from '../lib/offlineQueue';
 
 // Expanded operational logging → public.events (type + severity + details JSONB).
-export default function EventModal({ operator, onClose, onSaved }) {
+export default function EventModal({ operator, cycleId = null, onClose, onSaved }) {
   const { t, lang } = useLang();
   const { user } = useAuth();
   const fr = lang === 'fr';
@@ -56,6 +56,7 @@ export default function EventModal({ operator, onClose, onSaved }) {
     const payload = {
       operator_id: operator.id,
       created_by: user.id,
+      cycle_id: cycleId,
       event_date: form.event_date,
       type,
       severity: form.severity || null,

@@ -1,8 +1,33 @@
-// Production cycles derived from stocking logs (stocking-to-stocking windows).
-// The FAO-correct scope for FCR/survival: lifetime aggregates blend cycles and
-// species and become agronomically meaningless after the second stocking.
+// Production cycles. Two sources, unified into the same shape:
+//   { id, start, end, w0, fingerlings, species, pondLabel, closed, explicit }
+// (1) EXPLICIT rows from the `cycles` table (support multi-pond, labels), and
+// (2) DERIVED from stocking logs (stocking-to-stocking windows) as a fallback
+// for operators created before the cycles table. FCR/survival must be scoped to
+// one cycle — lifetime aggregates blend cycles/species and are meaningless.
 
 const DAY_MS = 86400000;
+
+// Normalize explicit `cycles` rows into the canonical shape. w0 (day-0 weight)
+// comes from the matching stocking log inside the cycle window.
+export function cyclesFromRows(rows = [], logs = []) {
+  const sorted = [...rows].filter((c) => c.stocked_on).sort((a, b) => String(a.stocked_on).localeCompare(String(b.stocked_on)));
+  return sorted.map((c, i) => {
+    // The stocking log linked to this cycle (or the first one on/after stocked_on).
+    const stock = logs.find((l) => l.type === 'stocking' && (l.cycle_id === c.id
+      || (!l.cycle_id && l.log_date === c.stocked_on)));
+    return {
+      id: c.id,
+      start: c.stocked_on,
+      end: c.closed_on || sorted[i + 1]?.stocked_on || null,
+      w0: Number(stock?.avg_weight_g) || null,
+      fingerlings: c.fingerlings ?? (Number(stock?.fingerlings_count) || null),
+      species: c.species || stock?.species || null,
+      pondLabel: c.pond_label || null,
+      closed: !!c.closed_on,
+      explicit: true,
+    };
+  });
+}
 
 // Cycles from stocking logs, oldest → newest. Each spans one stocking's date to
 // the next stocking's date (exclusive); the last cycle is open-ended.
@@ -34,8 +59,12 @@ export function inCycle(dateStr, cycle) {
   return ts >= startTs && ts < endTs;
 }
 
-export const cycleLogs = (logs = [], cycle) => logs.filter((l) => inCycle(l.log_date, cycle));
-export const cycleEvents = (events = [], cycle) => events.filter((e) => inCycle(e.event_date, cycle));
+// Prefer explicit cycle_id links; fall back to the date window (derived cycles,
+// or explicit rows whose historical logs predate linking).
+export const cycleLogs = (logs = [], cycle) => logs.filter((l) =>
+  cycle?.explicit && l.cycle_id ? l.cycle_id === cycle.id : inCycle(l.log_date, cycle));
+export const cycleEvents = (events = [], cycle) => events.filter((e) =>
+  cycle?.explicit && e.cycle_id ? e.cycle_id === cycle.id : inCycle(e.event_date, cycle));
 
 export function cycleDay(cycle, now = Date.now()) {
   if (!cycle) return null;

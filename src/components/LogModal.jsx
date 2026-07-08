@@ -10,7 +10,7 @@ import { enqueue, notifyQueued } from '../lib/offlineQueue';
 
 const SPECIES_KEY = { tilapia: 'Tilapia', silure: 'Silure', crevette: 'Crevette', carpe: 'Carpe' };
 
-export default function LogModal({ operator, onClose, onSaved }) {
+export default function LogModal({ operator, cycleId = null, onClose, onSaved }) {
   const { t, lang } = useLang();
   const fr = lang === 'fr';
   const { user } = useAuth();
@@ -66,6 +66,7 @@ export default function LogModal({ operator, onClose, onSaved }) {
     const payload = {
       operator_id: operator.id,
       created_by: user.id,
+      cycle_id: cycleId,
       type,
       log_date: form.log_date,
       species: form.species || null,

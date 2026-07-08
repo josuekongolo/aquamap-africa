@@ -246,3 +246,44 @@ export function rateFCR(speciesKey, fcr) {
 }
 
 export const speciesList = Object.keys(speciesBenchmarks);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sourced feeding-rate reference (FAO Cultured Aquatic Species fact sheets +
+// SRAC). ONLY figures quoted verbatim from those sources are included — the
+// intermediate grow-out band (~2–4% BW/day) is deliberately omitted because no
+// single FAO/SRAC figure states it (no-fabrication rule). Every row carries its
+// source. Used by the feed-log advisory; not by FCR (which stays measured).
+export const FEEDING_SOURCES = {
+  FAO_TILAPIA: { label: 'FAO — Oreochromis niloticus fact sheet', url: 'https://www.fao.org/fishery/en/culturedspecies/oreochromis_niloticus' },
+  SRAC_282: { label: 'SRAC 282 — Tank Culture of Tilapia (2009)', url: 'https://srac.tamu.edu/' },
+  FAO_CLARIAS: { label: 'FAO — Clarias gariepinus fact sheet', url: 'https://www.fao.org/fishery/en/culturedspecies/clarias_gariepinus' },
+  FAO_CARP: { label: 'FAO — Cyprinus carpio fact sheet', url: 'https://www.fao.org/fishery/en/culturedspecies/cyprinus_carpio' },
+};
+
+// rows: { stage, weightG:[min,max]|null, ratePct:[min,max], proteinPct:[min,max]|null, freqPerDay|null, source }
+export const feedingRates = {
+  Tilapia: {
+    rows: [
+      { stage: { fr: 'Alevinage (0–40 g)', en: 'Nursery (0–40 g)' }, weightG: [0, 40], ratePct: [4, 15], proteinPct: [30, 30], freqPerDay: 4, source: 'FAO_TILAPIA' },
+      { stage: { fr: 'Grossissement', en: 'Grow-out' }, weightG: [40, 400], ratePct: null, proteinPct: [30, 35], freqPerDay: null, source: 'FAO_TILAPIA' },
+      { stage: { fr: 'Taille marchande (~680 g)', en: 'Market size (~680 g)' }, weightG: [400, 900], ratePct: [1.0, 1.5], proteinPct: [32, 40], freqPerDay: null, source: 'SRAC_282' },
+    ],
+    growout: { fr: '5–8 mois jusqu’à 400–500 g (empoissonnement 1–3/m²)', en: '5–8 months to 400–500 g (stocked 1–3/m²)', source: 'FAO_TILAPIA' },
+    note: { fr: 'La plage intermédiaire (~2–4 %) n’est pas chiffrée par la FAO/SRAC et n’est donc pas indiquée.', en: 'The intermediate band (~2–4%) is not given a figure by FAO/SRAC and is intentionally omitted.' },
+  },
+  Silure: {
+    rows: [
+      { stage: { fr: 'Grossissement (premiers mois)', en: 'Grow-out (first months)' }, weightG: null, ratePct: [6, 6], proteinPct: [35, 42], freqPerDay: null, source: 'FAO_CLARIAS' },
+      { stage: { fr: 'Aliment fermier', en: 'Farm-made feed' }, weightG: null, ratePct: null, proteinPct: [28, 35], freqPerDay: null, source: 'FAO_CLARIAS' },
+    ],
+    growout: { fr: '~6 mois en polyculture (alevins 5–15 g)', en: '~6 months in polyculture (5–15 g fingerlings)', source: 'FAO_CLARIAS' },
+    note: { fr: 'Le taux est réduit à mesure que les poissons grandissent (FAO). La fréquence de nourrissage en grossissement n’est pas précisée par la FAO.', en: 'The rate tapers as fish grow (FAO). FAO does not state a grow-out feeding frequency.' },
+  },
+  Carpe: {
+    rows: [
+      { stage: { fr: 'Ration journalière', en: 'Daily ration' }, weightG: null, ratePct: [3, 5], proteinPct: null, freqPerDay: null, source: 'FAO_CARP' },
+    ],
+    growout: { fr: '250–400 g en 2e année ; 0,6–1 kg/saison en polyculture tropicale', en: '250–400 g in year 2; 0.6–1 kg/season in tropical polyculture', source: 'FAO_CARP' },
+    note: null,
+  },
+};
