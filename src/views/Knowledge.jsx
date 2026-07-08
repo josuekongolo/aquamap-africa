@@ -8,10 +8,13 @@ import { KnowledgeIcon } from '../lib/icons';
 import { useLang } from '../context/LangContext';
 import ResearchPanel from '../components/ResearchPanel';
 
+const PAGE_SIZE = 20;
+
 export default function Knowledge() {
   const { t, lang } = useLang();
   const [activeCategory, setActiveCategory] = useState('all');
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // ⌘K / Ctrl-K opens the command palette.
   useEffect(() => {
@@ -29,7 +32,10 @@ export default function Knowledge() {
 
   const catCount = (id) => (id === 'all' ? knowledge.length : knowledge.filter(k => k.category === id).length);
   const filtered = activeCategory === 'all' ? knowledge : knowledge.filter(k => k.category === activeCategory);
+  const visible = filtered.slice(0, visibleCount);
+  const remaining = filtered.length - visible.length;
   const groups = knowledgeCategories.filter(c => c.id !== 'all');
+  const pickCategory = (id) => { setActiveCategory(id); setVisibleCount(PAGE_SIZE); };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -56,7 +62,7 @@ export default function Knowledge() {
             return (
               <button
                 key={c.id}
-                onClick={() => setActiveCategory(c.id)}
+                onClick={() => pickCategory(c.id)}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm whitespace-nowrap transition ${
                   active ? 'font-semibold' : 'text-gray-600 hover:bg-gray-50'
                 }`}
@@ -73,7 +79,7 @@ export default function Knowledge() {
         {/* Resource list */}
         <div className="min-w-0">
           <div className="divide-y divide-gray-100 bg-white rounded-xl border border-gray-100 shadow-sm">
-            {filtered.map(k => (
+            {visible.map(k => (
               <a
                 key={k.id}
                 href={k.url}
@@ -99,6 +105,17 @@ export default function Knowledge() {
               </a>
             ))}
           </div>
+
+          {remaining > 0 && (
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}
+                className="text-sm font-semibold px-5 py-2.5 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-700"
+              >
+                {lang === 'fr' ? `Afficher plus (${remaining})` : `Show more (${remaining})`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
