@@ -43,7 +43,7 @@ export default function GroupReport({ groupId }) {
   if (!d) return <div className="max-w-3xl mx-auto px-6 py-12 text-sm text-gray-400">{fr ? 'Groupe introuvable.' : 'Group not found.'}</div>;
 
   const { group, members, plan, indicators, meetings, incidents, assessments } = d;
-  const women = members.filter((m) => ['Femme', 'Female'].includes(m.operators?.gender)).length;
+  const women = members.filter((m) => m.operators?.gender === 'female').length;
   const scored = assessments.length;
   const yes = assessments.filter((a) => a.score === 'yes').length;
   const partly = assessments.filter((a) => a.score === 'partly').length;

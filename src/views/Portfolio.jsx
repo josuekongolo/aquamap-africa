@@ -14,6 +14,7 @@ import { useRealtimeTable } from '../lib/useRealtimeTable';
 import LogModal from '../components/LogModal';
 import EventModal from '../components/EventModal';
 import CommunityPanel from '../components/dashboard/CommunityPanel';
+import WeatherClusters from '../components/dashboard/WeatherClusters';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -155,6 +156,8 @@ export default function Portfolio() {
 
       {operators.length > 0 && (
         <>
+          <WeatherClusters operators={operators} fr={fr} />
+
           {/* Attention strip */}
           <Card>
             <CardHeader>

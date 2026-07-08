@@ -133,7 +133,7 @@ export default function Admin() {
 
   const total = filtered.length;
   const pct = (n) => (total ? Math.round((n / total) * 100) : 0);
-  const women = filtered.filter(o => ['Femme', 'Female'].includes(o.gender)).length;
+  const women = filtered.filter(o => o.gender === 'female').length;
   const youth = filtered.filter(o => ['18-25', '26-35'].includes(o.age_range)).length;
   const geo = filtered.filter(o => o.lat != null && o.lng != null).length;
   const totalAreaHa = filtered.reduce((s, o) => s + (Number(o.area_m2) || 0), 0) / 10000;

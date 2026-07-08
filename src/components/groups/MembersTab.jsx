@@ -12,8 +12,10 @@ const ROLES = [
   { id: 'committee', fr: 'Membre du comité', en: 'Committee member' },
   { id: 'leader',    fr: 'Leader élu',       en: 'Elected leader' },
 ];
-const isWoman = (g) => g === 'Femme' || g === 'Female';
+const isWoman = (g) => g === 'female';
 const isYouth = (a) => a === '18-25' || a === '26-35';
+const GENDER_LABEL = { male: { fr: 'Homme', en: 'Male' }, female: { fr: 'Femme', en: 'Female' }, other: { fr: 'Autre', en: 'Other' } };
+const genderLabel = (g, fr) => (GENDER_LABEL[g] ? (fr ? GENDER_LABEL[g].fr : GENDER_LABEL[g].en) : (g || '—'));
 
 // Membership & representation (FAO Annex I.2.A: participation & equity —
 // women/youth shares per indicators I.2.A.7.2 and I.2.C.3.2).
@@ -135,7 +137,7 @@ export default function MembersTab({ group, fr, user }) {
                   </span>
                 </TableCell>
                 <TableCell><Badge variant="outline">{roleLabel(m.role)}</Badge></TableCell>
-                <TableCell className="text-muted-foreground">{m.operators?.gender || '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{genderLabel(m.operators?.gender, fr)}</TableCell>
                 <TableCell className="text-muted-foreground">{m.operators?.age_range || '—'}</TableCell>
                 <TableCell className="text-muted-foreground tabular-nums">{m.joined_on || '—'}</TableCell>
                 <TableCell>

@@ -48,12 +48,12 @@ await admin.from('operators').delete().eq('created_by', userId);
 
 // ── 3. DEMO operators — synthetic, clearly labeled, plausible magnitudes ───
 const OPERATORS = [
-  { name: 'DEMO — Ferme Lac Rose', country: 'Sénégal', region: 'Dakar', lat: 14.838, lng: -17.234, gender: 'Homme', age_range: '36-45', species: ['tilapia'], systems: ['etang'], units: 4, area_m2: 2500, production_range: '1-5 tonnes' },
-  { name: 'DEMO — Coopérative Thiès', country: 'Sénégal', region: 'Thiès', lat: 14.79, lng: -16.93, gender: 'Femme', age_range: '26-35', species: ['tilapia', 'silure'], systems: ['bassin'], units: 6, area_m2: 1800, production_range: '1-5 tonnes' },
-  { name: 'DEMO — Pisciculture Yamoussoukro', country: "Côte d'Ivoire", region: 'Yamoussoukro', lat: 6.82, lng: -5.28, gender: 'Homme', age_range: '46-55', species: ['silure'], systems: ['etang'], units: 8, area_m2: 4000, production_range: '5-20 tonnes' },
-  { name: 'DEMO — Ferme Abidjan Sud', country: "Côte d'Ivoire", region: 'Abidjan', lat: 5.31, lng: -4.03, gender: 'Femme', age_range: '18-25', species: ['tilapia'], systems: ['cage'], units: 10, area_m2: 1200, production_range: '1-5 tonnes' },
-  { name: 'DEMO — Aquaferme Yaoundé', country: 'Cameroun', region: 'Centre', lat: 3.87, lng: 11.52, gender: 'Homme', age_range: '26-35', species: ['silure', 'tilapia'], systems: ['bassin', 'ras'], units: 5, area_m2: 900, production_range: '1-5 tonnes' },
-  { name: 'DEMO — Étangs de Douala', country: 'Cameroun', region: 'Littoral', lat: 4.05, lng: 9.7, gender: 'Femme', age_range: '36-45', species: ['tilapia'], systems: ['etang'], units: 3, area_m2: 3200, production_range: '< 1 tonne' },
+  { name: 'DEMO — Ferme Lac Rose', country: 'Sénégal', region: 'Dakar', lat: 14.838, lng: -17.234, gender: 'male', age_range: '36-45', species: ['tilapia'], systems: ['etang'], units: 4, area_m2: 2500, production_range: '1-5 tonnes' },
+  { name: 'DEMO — Coopérative Thiès', country: 'Sénégal', region: 'Thiès', lat: 14.79, lng: -16.93, gender: 'female', age_range: '26-35', species: ['tilapia', 'silure'], systems: ['bassin'], units: 6, area_m2: 1800, production_range: '1-5 tonnes' },
+  { name: 'DEMO — Pisciculture Yamoussoukro', country: "Côte d'Ivoire", region: 'Yamoussoukro', lat: 6.82, lng: -5.28, gender: 'male', age_range: '46-55', species: ['silure'], systems: ['etang'], units: 8, area_m2: 4000, production_range: '5-20 tonnes' },
+  { name: 'DEMO — Ferme Abidjan Sud', country: "Côte d'Ivoire", region: 'Abidjan', lat: 5.31, lng: -4.03, gender: 'female', age_range: '18-25', species: ['tilapia'], systems: ['cage'], units: 10, area_m2: 1200, production_range: '1-5 tonnes' },
+  { name: 'DEMO — Aquaferme Yaoundé', country: 'Cameroun', region: 'Centre', lat: 3.87, lng: 11.52, gender: 'male', age_range: '26-35', species: ['silure', 'tilapia'], systems: ['bassin', 'ras'], units: 5, area_m2: 900, production_range: '1-5 tonnes' },
+  { name: 'DEMO — Étangs de Douala', country: 'Cameroun', region: 'Littoral', lat: 4.05, lng: 9.7, gender: 'female', age_range: '36-45', species: ['tilapia'], systems: ['etang'], units: 3, area_m2: 3200, production_range: '< 1 tonne' },
 ];
 
 const opRows = OPERATORS.map((o) => ({

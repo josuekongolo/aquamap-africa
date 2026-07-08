@@ -977,3 +977,53 @@ as $$
 $$;
 revoke all on function public.species_fcr_benchmark() from public, anon;
 grant execute on function public.species_fcr_benchmark() to authenticated;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 16. i18n STABLE IDS — gender stored as a stable id ('male'|'female'|'other')
+--     instead of a localized display label ('Homme'/'Femme'/'Male'/'Female'),
+--     which had forced dual-language checks in SQL and the app. Idempotent:
+--     the CASE maps any legacy label (and already-migrated ids) to the id.
+update public.operators set gender = case lower(coalesce(gender, ''))
+  when 'homme' then 'male'   when 'male'   then 'male'
+  when 'femme' then 'female' when 'female' then 'female'
+  when 'autre' then 'other'  when 'other'  then 'other'
+  else nullif(gender, '') end
+where gender is not null;
+
+-- community_overview() now checks the stable id.
+create or replace function public.community_overview()
+returns jsonb
+language sql
+security definer set search_path = public
+stable
+as $$
+  select case when auth.uid() is null then null else jsonb_build_object(
+    'operators_total',   (select count(*) from operators),
+    'agents_total',      (select count(*) from agents),
+    'groups_total',      (select count(*) from groups),
+    'members_total',     (select count(*) from group_members),
+    'women_share',       (select round(100.0 * count(*) filter (where gender = 'female')
+                                 / nullif(count(*) filter (where gender is not null and gender <> ''), 0))
+                          from operators),
+    'youth_share',       (select round(100.0 * count(*) filter (where age_range in ('18-25', '26-35'))
+                                 / nullif(count(*) filter (where age_range is not null and age_range <> ''), 0))
+                          from operators),
+    'harvest_12m_kg',    (select coalesce(sum(kg_harvested), 0) from logs
+                          where type = 'harvest' and log_date >= current_date - interval '12 months'),
+    'feed_12m_kg',       (select coalesce(sum(feed_kg), 0) from logs
+                          where type = 'feed' and log_date >= current_date - interval '12 months'),
+    'meetings_12m',      (select count(*) from meetings where meeting_date >= current_date - interval '12 months'),
+    'incidents_open',    (select count(*) from incidents where status in ('open', 'mediation', 'escalated')),
+    'incidents_resolved_12m', (select count(*) from incidents where status = 'resolved'
+                               and coalesce(resolved_on, incident_date) >= current_date - interval '12 months'),
+    'countries',         (select coalesce(jsonb_agg(jsonb_build_object(
+                            'country', c.country, 'operators', c.n, 'women', c.women, 'groups', c.g)), '[]'::jsonb)
+                          from (
+                            select o.country, count(*) as n,
+                                   count(*) filter (where o.gender = 'female') as women,
+                                   (select count(*) from groups gr where gr.country = o.country) as g
+                            from operators o where o.country is not null and o.country <> ''
+                            group by o.country order by count(*) desc
+                          ) c)
+  ) end;
+$$;

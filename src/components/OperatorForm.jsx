@@ -15,6 +15,15 @@ import { africaCountries } from '../data/africaCountries';
 // All African countries (alphabetical) for the operator country selector.
 const COUNTRY_OPTIONS = africaCountries.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'fr'));
 
+// Gender is stored as a stable id; normalize any legacy label on read.
+export const genderId = (v) => {
+  const s = String(v || '').toLowerCase();
+  if (['homme', 'male'].includes(s)) return 'male';
+  if (['femme', 'female'].includes(s)) return 'female';
+  if (['autre', 'other'].includes(s)) return 'other';
+  return '';
+};
+
 const systems = [
   { id: 'etang', label: 'Étang', Icon: Waves },
   { id: 'cage', label: 'Cage', Icon: Fish },
@@ -67,7 +76,7 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
       ? `${Number(initialOperator.lat).toFixed(4)}, ${Number(initialOperator.lng).toFixed(4)}` : '',
     lat: initialOperator.lat ?? null,
     lng: initialOperator.lng ?? null,
-    gender: initialOperator.gender || '',
+    gender: genderId(initialOperator.gender),
     ageRange: initialOperator.age_range || '',
     legalStatus: initialOperator.legal_status || '',
     units: initialOperator.units != null ? String(initialOperator.units) : '',
@@ -304,9 +313,9 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
                     onChange={e => setField('gender', e.target.value)}
                   >
                     <option value="">...</option>
-                    <option>{t.register.male}</option>
-                    <option>{t.register.female}</option>
-                    <option>{t.register.other}</option>
+                    <option value="male">{t.register.male}</option>
+                    <option value="female">{t.register.female}</option>
+                    <option value="other">{t.register.other}</option>
                   </select>
                 </div>
                 <div>
