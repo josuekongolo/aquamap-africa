@@ -58,7 +58,7 @@ function primarySpeciesKey(operator) {
 // selected production CYCLE (FCR over a whole lifetime is agronomically wrong).
 export default function OperatorDetail({ operatorId }) {
   const { t, lang } = useLang();
-  const { configured } = useAuth();
+  const { user, configured } = useAuth();
   const fr = lang === 'fr';
 
   const [operator, setOperator] = useState(null);
