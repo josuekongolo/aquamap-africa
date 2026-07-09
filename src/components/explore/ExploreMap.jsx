@@ -3,11 +3,12 @@
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { MapboxOverlay } from '@deck.gl/mapbox';
+import * as WeatherLayers from 'weatherlayers-gl';
+import { scalarTexture, vectorTexture, forecastBounds, SST_PALETTE, WAVE_PALETTE } from '../../lib/weatherTextures';
 
 const COUNTRY_COLOR = { 'Sénégal': '#0D6B8A', "Côte d'Ivoire": '#00A878', 'Cameroun': '#F4A261' };
 const BRAND = '#0D6B8A';
-const TRANSPARENT_PNG = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-const DEFAULT_COORDS = [[-19.5, 19], [13.5, 19], [13.5, -1], [-19.5, -1]];
 
 const STREET_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 const SATELLITE_STYLE = {
@@ -25,78 +26,19 @@ const SATELLITE_STYLE = {
 };
 const styleFor = (b) => (b === 'satellite' ? SATELLITE_STYLE : STREET_STYLE);
 
-// color ramps [value, [r,g,b]]
-const WAVE_STOPS = [[0, [44, 127, 184]], [1, [161, 218, 180]], [2, [254, 224, 139]], [3, [252, 141, 89]], [4, [215, 48, 39]]];
-const SST_STOPS = [[18, [44, 127, 184]], [22, [77, 175, 74]], [26, [254, 224, 139]], [30, [252, 141, 89]], [33, [215, 48, 39]]];
-const CUR_STOPS = [[0, [224, 243, 248]], [0.4, [123, 204, 196]], [0.9, [44, 127, 184]], [1.8, [8, 64, 129]]];
-const WIND_STOPS = [[0, [237, 248, 251]], [4, [179, 205, 227]], [9, [140, 150, 198]], [16, [136, 65, 157]]];
+// Particle colours for the animated fields.
+const CURRENT_COLOR = [86, 204, 224];   // cyan
+const WIND_COLOR = [255, 255, 255];     // white
 
-const FIELDS = [
-  { key: 'waves', src: 'fld-waves', acc: (c) => c.wave, stops: WAVE_STOPS },
-  { key: 'sst', src: 'fld-sst', acc: (c) => c.sst, stops: SST_STOPS },
-  { key: 'currents', src: 'fld-cur', acc: (c) => c.curVel, stops: CUR_STOPS },
-  { key: 'wind', src: 'fld-wind', acc: (c) => c.windSpd, stops: WIND_STOPS },
-];
-
+// Only these native MapLibre layers are toggled via visibility; the marine
+// fields (sst/waves/currents/wind) are deck.gl/WeatherLayers layers, rebuilt
+// from the enabled set + forecast in updateDeckLayers().
 const LAYER_MAP = {
   operators: ['op-clusters', 'op-cluster-count', 'op-point'],
   zones: ['zone-fill', 'zone-line'],
   sites: ['site-clusters', 'site-cluster-count', 'site-point'],
-  waves: ['fld-waves'],
-  sst: ['fld-sst'],
-  currents: ['fld-cur', 'fc-currents'],
-  wind: ['fld-wind', 'fc-wind'],
 };
 
-const lerp = (a, b, t) => a + (b - a) * t;
-function rampColor(stops, v) {
-  if (v <= stops[0][0]) return stops[0][1];
-  for (let i = 1; i < stops.length; i++) {
-    if (v <= stops[i][0]) {
-      const [v0, c0] = stops[i - 1], [v1, c1] = stops[i];
-      const t = (v - v0) / (v1 - v0);
-      return [lerp(c0[0], c1[0], t), lerp(c0[1], c1[1], t), lerp(c0[2], c1[2], t)];
-    }
-  }
-  return stops[stops.length - 1][1];
-}
-
-// Build a small grid-resolution canvas; MapLibre's linear raster resampling scales it
-// into a smooth interpolated field over the bbox.
-function fieldDataURL(fc, accessor, stops, alpha = 200) {
-  const nLat = fc.lats.length, nLng = fc.lngs.length;
-  const cv = document.createElement('canvas');
-  cv.width = nLng; cv.height = nLat;
-  const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(nLng, nLat);
-  for (let r = 0; r < nLat; r++) {
-    const latIdx = nLat - 1 - r; // row 0 = north
-    for (let c = 0; c < nLng; c++) {
-      const cell = fc.cells[latIdx * nLng + c];
-      const o = (r * nLng + c) * 4;
-      const val = cell ? accessor(cell) : null;
-      if (val == null || Number.isNaN(val)) { img.data[o + 3] = 0; continue; }
-      const [rr, gg, bb] = rampColor(stops, val);
-      img.data[o] = rr | 0; img.data[o + 1] = gg | 0; img.data[o + 2] = bb | 0; img.data[o + 3] = alpha;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  return cv.toDataURL();
-}
-function fieldCoords(fc) {
-  const { west, east, south, north, latStep, lngStep } = fc.bbox;
-  const W = west - lngStep / 2, E = east + lngStep / 2, N = north + latStep / 2, S = south - latStep / 2;
-  return [[W, N], [E, N], [E, S], [W, S]];
-}
-function pointsGeoJSON(points) {
-  return {
-    type: 'FeatureCollection',
-    features: points.map((p) => ({
-      type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-      properties: { curVel: p.curVel, curDir: p.curDir, windSpd: p.windSpd, windDir: p.windDir },
-    })),
-  };
-}
 function operatorsGeoJSON(operators) {
   return {
     type: 'FeatureCollection',
@@ -126,36 +68,73 @@ function countryEl(flag, color) {
   el.textContent = flag;
   return el;
 }
-function arrowImage(fill) {
-  const s = 28;
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = s;
-  const ctx = cv.getContext('2d');
-  ctx.translate(s / 2, s / 2);
-  ctx.beginPath();
-  ctx.moveTo(0, -10); ctx.lineTo(6, 8); ctx.lineTo(0, 3.5); ctx.lineTo(-6, 8); ctx.closePath();
-  ctx.fillStyle = fill; ctx.fill();
-  ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.stroke();
-  return ctx.getImageData(0, 0, s, s);
+
+// Build the WeatherLayers layer stack from the enabled set + forecast grid.
+// Rasters (heatmaps) sit under the particle fields.
+function buildDeckLayers(fc, set) {
+  if (!fc || !fc.lats || !fc.cells?.length || !set) return [];
+  const bounds = forecastBounds(fc);
+  const layers = [];
+
+  if (set.has('waves')) {
+    layers.push(new WeatherLayers.RasterLayer({
+      id: 'wl-waves', image: scalarTexture(fc, (c) => c.wave), imageType: WeatherLayers.ImageType.SCALAR,
+      bounds, palette: WAVE_PALETTE, opacity: 0.6, imageInterpolation: WeatherLayers.ImageInterpolation.CUBIC,
+    }));
+  }
+  if (set.has('sst')) {
+    layers.push(new WeatherLayers.RasterLayer({
+      id: 'wl-sst', image: scalarTexture(fc, (c) => c.sst), imageType: WeatherLayers.ImageType.SCALAR,
+      bounds, palette: SST_PALETTE, opacity: 0.72, imageInterpolation: WeatherLayers.ImageInterpolation.CUBIC,
+    }));
+  }
+  if (set.has('currents')) {
+    layers.push(new WeatherLayers.ParticleLayer({
+      id: 'wl-currents', image: vectorTexture(fc, (c) => c.curVel, (c) => c.curDir, false),
+      imageType: WeatherLayers.ImageType.VECTOR, bounds,
+      numParticles: 1400, maxAge: 40, speedFactor: 40, width: 2.2,
+      color: CURRENT_COLOR, opacity: 0.9, animate: true,
+    }));
+  }
+  if (set.has('wind')) {
+    layers.push(new WeatherLayers.ParticleLayer({
+      id: 'wl-wind', image: vectorTexture(fc, (c) => c.windSpd, (c) => c.windDir, true),
+      imageType: WeatherLayers.ImageType.VECTOR, bounds,
+      numParticles: 2000, maxAge: 28, speedFactor: 9, width: 1.6,
+      color: WIND_COLOR, opacity: 0.85, animate: true,
+    }));
+  }
+  return layers;
 }
 
 function Legend({ layers, fr }) {
-  const fields = [];
-  if (layers?.has('waves')) fields.push({ title: fr ? 'Vagues (m)' : 'Waves (m)', stops: WAVE_STOPS });
-  if (layers?.has('sst')) fields.push({ title: fr ? 'Temp. mer (°C)' : 'Sea temp (°C)', stops: SST_STOPS });
-  if (layers?.has('currents')) fields.push({ title: fr ? 'Courants (m/s)' : 'Currents (m/s)', stops: CUR_STOPS, arrow: true });
-  if (layers?.has('wind')) fields.push({ title: fr ? 'Vent (m/s)' : 'Wind (m/s)', stops: WIND_STOPS, arrow: true });
-  if (!fields.length) return null;
-  const css = (s) => `linear-gradient(90deg, ${s.map(([v, c], i) => `rgb(${c[0]},${c[1]},${c[2]}) ${(i / (s.length - 1)) * 100}%`).join(', ')})`;
+  const items = [];
+  const grad = (pal) => {
+    const min = pal[0][0], max = pal[pal.length - 1][0];
+    const stops = pal.map(([v, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${Math.round(((v - min) / (max - min)) * 100)}%`);
+    return { css: `linear-gradient(90deg, ${stops.join(', ')})`, min, max };
+  };
+  if (layers?.has('sst')) items.push({ kind: 'ramp', title: fr ? 'Temp. mer (°C)' : 'Sea temp (°C)', ...grad(SST_PALETTE) });
+  if (layers?.has('waves')) items.push({ kind: 'ramp', title: fr ? 'Vagues (m)' : 'Waves (m)', ...grad(WAVE_PALETTE) });
+  if (layers?.has('currents')) items.push({ kind: 'flow', title: fr ? 'Courants' : 'Currents', color: CURRENT_COLOR });
+  if (layers?.has('wind')) items.push({ kind: 'flow', title: fr ? 'Vent' : 'Wind', color: WIND_COLOR });
+  if (!items.length) return null;
   return (
     <div className="absolute bottom-6 right-3 z-[500] bg-white/95 backdrop-blur rounded-lg shadow-lg p-3 text-[11px] text-gray-600 w-[180px] space-y-2">
-      {fields.map((f) => (
+      {items.map((f) => (
         <div key={f.title}>
-          <div className="font-semibold text-gray-700 mb-1 flex items-center gap-1">{f.arrow && <span>➤</span>}{f.title}</div>
-          <div className="h-2.5 rounded" style={{ background: css(f.stops) }} />
-          <div className="flex justify-between mt-0.5 text-[10px] text-gray-400">
-            <span>{f.stops[0][0]}</span><span>{f.stops[f.stops.length - 1][0]}</span>
-          </div>
+          <div className="font-semibold text-gray-700 mb-1">{f.title}</div>
+          {f.kind === 'ramp' ? (
+            <>
+              <div className="h-2.5 rounded" style={{ background: f.css }} />
+              <div className="flex justify-between mt-0.5 text-[10px] text-gray-400"><span>{f.min}</span><span>{f.max}</span></div>
+            </>
+          ) : (
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+              <span className="inline-block h-0.5 w-8 rounded-full" style={{ backgroundColor: `rgb(${f.color[0]},${f.color[1]},${f.color[2]})`, boxShadow: '0 0 0 1px rgba(0,0,0,.12)' }} />
+              {fr ? 'flux animé' : 'animated flow'}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -193,6 +172,17 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
     map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true, showAccuracyCircle: false }), 'top-right');
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 
+    // deck.gl overlay (non-interleaved → its own canvas, no WebGL-context clash
+    // with MapLibre) that hosts the animated WeatherLayers marine fields.
+    const overlay = new MapboxOverlay({ interleaved: false, layers: [] });
+    map.addControl(overlay);
+    map._deckOverlay = overlay;
+
+    const updateDeckLayers = () => {
+      overlay.setProps({ layers: buildDeckLayers(mapRef.current?._forecast, mapRef.current?._layers) });
+    };
+    map._updateDeckLayers = updateDeckLayers;
+
     const reportBounds = () => {
       const b = map.getBounds();
       const w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
@@ -208,29 +198,8 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
       }
     }
 
-    function applyForecastData() {
-      const fc = mapRef.current?._forecast;
-      if (!fc || !fc.lats || !fc.cells?.length) return;
-      const coords = fieldCoords(fc);
-      for (const f of FIELDS) {
-        const src = map.getSource(f.src);
-        if (src) src.updateImage({ url: fieldDataURL(fc, f.acc, f.stops), coordinates: coords });
-      }
-      map.getSource('forecast-points')?.setData(pointsGeoJSON(fc.points || []));
-    }
-
     function addDataLayers() {
       if (!map.isStyleLoaded()) return;
-      if (!map.hasImage('arrow-cur')) map.addImage('arrow-cur', arrowImage('#0a3a4a'), { pixelRatio: 2 });
-      if (!map.hasImage('arrow-wind')) map.addImage('arrow-wind', arrowImage('#3b2a5a'), { pixelRatio: 2 });
-
-      // ── smooth field rasters (added first, under everything else) ──
-      for (const f of FIELDS) {
-        if (!map.getSource(f.src)) {
-          map.addSource(f.src, { type: 'image', url: TRANSPARENT_PNG, coordinates: DEFAULT_COORDS });
-          map.addLayer({ id: f.src, type: 'raster', source: f.src, layout: { visibility: 'none' }, paint: { 'raster-opacity': 0.72, 'raster-resampling': 'linear' } });
-        }
-      }
 
       // ── co-management zones (polygons, under the point layers) ──
       if (!map.getSource('zones')) {
@@ -244,7 +213,6 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
           paint: { 'line-color': ['get', 'color'], 'line-width': 2 },
         });
         map.on('click', 'zone-fill', (e) => {
-          // Point markers on top take precedence over the polygon beneath them.
           const hit = map.queryRenderedFeatures(e.point, { layers: ['op-point', 'op-clusters', 'site-point', 'site-clusters'].filter((id) => map.getLayer(id)) });
           if (hit.length) return;
           const z = zoneIndexRef.current.get(e.features[0].properties.id);
@@ -284,7 +252,7 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
         }
       }
 
-      // ── aquaculture sites (Places, clustered, green) ──
+      // ── aquaculture sites (Places, clustered, orange) ──
       if (!map.getSource('sites')) {
         map.addSource('sites', { type: 'geojson', data: sitesGeoJSON([...siteIndexRef.current.values()]), cluster: true, clusterRadius: 50, clusterMaxZoom: 12 });
         map.addLayer({
@@ -314,29 +282,14 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
         }
       }
 
-      // ── direction arrows for currents / wind (on top) ──
-      if (!map.getSource('forecast-points')) {
-        map.addSource('forecast-points', { type: 'geojson', data: pointsGeoJSON(mapRef.current?._forecast?.points || []) });
-        map.addLayer({
-          id: 'fc-currents', type: 'symbol', source: 'forecast-points',
-          layout: { 'icon-image': 'arrow-cur', 'icon-allow-overlap': true, 'icon-rotation-alignment': 'map', 'icon-rotate': ['get', 'curDir'], 'icon-size': ['interpolate', ['linear'], ['get', 'curVel'], 0, 0.45, 1, 0.9, 2, 1.3] },
-        });
-        map.addLayer({
-          id: 'fc-wind', type: 'symbol', source: 'forecast-points',
-          layout: { 'icon-image': 'arrow-wind', 'icon-allow-overlap': true, 'icon-rotation-alignment': 'map', 'icon-rotate': ['+', ['get', 'windDir'], 180], 'icon-size': ['interpolate', ['linear'], ['get', 'windSpd'], 0, 0.45, 8, 0.85, 16, 1.25] },
-        });
-      }
-
       applyVisibility();
-      applyForecastData();
     }
 
     map._applyVisibility = applyVisibility;
-    map._applyForecastData = applyForecastData;
-    map.on('load', () => { addDataLayers(); reportBounds(); });
+    map.on('load', () => { addDataLayers(); reportBounds(); updateDeckLayers(); });
     map.on('styledata', () => addDataLayers());
 
-    return () => { map.remove(); mapRef.current = null; };
+    return () => { map._deckOverlay = null; map.remove(); mapRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -358,7 +311,7 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
     const map = mapRef.current;
     if (!map) return;
     map._forecast = forecast;
-    map._applyForecastData?.();
+    map._updateDeckLayers?.();
   }, [forecast]);
 
   useEffect(() => {
@@ -366,6 +319,7 @@ export default function ExploreMap({ operators = [], sites = [], countries = [],
     if (!map) return;
     map._layers = layers;
     map._applyVisibility?.();
+    map._updateDeckLayers?.();
   }, [layers]);
 
   useEffect(() => {
