@@ -7,7 +7,6 @@ import { useLang } from '../context/LangContext';
 import { dataSources } from '../data/institutions';
 import { africaCountries } from '../data/africaCountries';
 import { speciesList } from '../data/species';
-import { knowledge } from '../data/knowledge';
 import { suppliers } from '../data/suppliers';
 import Reveal from '../components/Reveal';
 import CountUp from '../components/CountUp';
@@ -22,7 +21,7 @@ export default function Home({ counts } = {}) {
   const stat = [
     { n: africaCountries.length, l: fr ? 'pays couverts' : 'countries covered' },
     { n: speciesList.length, l: fr ? 'espèces suivies' : 'species tracked' },
-    { n: knowledge.length, l: fr ? 'ressources FAO' : 'FAO resources' },
+    { n: counts?.knowledge ?? 200, l: fr ? 'ressources FAO' : 'FAO resources' },
     { n: counts?.suppliers ?? suppliers.length, l: fr ? 'fournisseurs' : 'suppliers' },
   ];
 

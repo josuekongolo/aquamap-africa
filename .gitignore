@@ -6,3 +6,7 @@ out/
 .env.*.local
 .vercel
 .env*.local
+
+# Stray scratch files (not part of the app)
+feed.pdf
+wf.html
