@@ -13,6 +13,10 @@ export default function BottomNav() {
   const { user } = useAuth();
   const pathname = usePathname();
 
+  // The full-bleed map is immersive; its side panels (z-1100) would otherwise
+  // fight this bar (z-50). Mobile still has the top navbar there for nav.
+  if (pathname.startsWith('/map')) return null;
+
   const L = lang === 'fr'
     ? { home: 'Accueil', map: 'Carte', know: 'Docs', sup: 'Fourn.', dash: 'Tableau', groups: 'Groupes', login: 'Connexion' }
     : { home: 'Home', map: 'Map', know: 'Docs', sup: 'Suppliers', dash: 'Board', groups: 'Groups', login: 'Sign in' };
@@ -33,9 +37,9 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t flex shadow-[0_-1px_8px_rgba(0,0,0,0.06)]">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t flex shadow-[0_-1px_8px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]">
       {items.map(it => {
-        const active = pathname === it.href;
+        const active = it.href === '/' ? pathname === '/' : pathname.startsWith(it.href);
         return (
           <Link
             key={it.href}
