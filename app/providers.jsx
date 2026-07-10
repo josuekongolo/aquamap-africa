@@ -23,7 +23,7 @@ export default function Providers({ children }) {
         <TooltipProvider delayDuration={0}>
           {/* Reserve space for the fixed mobile bottom bar on the whole column
               (so the Footer clears it too), plus the iOS home-indicator inset. */}
-          <div className={`min-h-screen flex flex-col md:pb-0 ${reserveBottom ? 'pb-[calc(3.5rem+env(safe-area-inset-bottom))]' : ''}`} style={{ backgroundColor: '#F8FAFC' }}>
+          <div className={`min-h-screen flex flex-col md:pb-0 ${reserveBottom ? 'pb-[calc(3.5rem+max(0.9rem,env(safe-area-inset-bottom)))]' : ''}`} style={{ backgroundColor: '#F8FAFC' }}>
             <Navbar />
             <OfflineBanner />
             <main className="flex-1">{children}</main>

@@ -37,14 +37,14 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t flex shadow-[0_-1px_8px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t flex shadow-[0_-1px_8px_rgba(0,0,0,0.06)] pt-1.5 pb-[max(0.9rem,env(safe-area-inset-bottom))]">
       {items.map(it => {
         const active = it.href === '/' ? pathname === '/' : pathname.startsWith(it.href);
         return (
           <Link
             key={it.href}
             href={it.href}
-            className="flex-1 flex flex-col items-center justify-center py-2 text-[11px] font-medium"
+            className="flex-1 flex flex-col items-center justify-center py-1.5 text-[11px] font-medium"
             style={{ color: active ? '#0D6B8A' : '#94a3b8' }}
           >
             <it.Icon className="w-5 h-5 mb-0.5" strokeWidth={2} />
