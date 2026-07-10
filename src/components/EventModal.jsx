@@ -74,12 +74,12 @@ export default function EventModal({ operator, cycleId = null, onClose, onSaved 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 py-8 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-[100] px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 max-w-md w-full">
         <h3 className="font-bold text-lg mb-1" style={{ color: '#0D6B8A' }}>{fr ? 'Nouvel événement' : 'New event'}</h3>
         <p className="text-sm text-gray-400 mb-5">{operator.name}</p>
 
-        <div className="grid grid-cols-5 gap-2 mb-5">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-5">
           {types.map((ty) => (
             <button key={ty.id} onClick={() => setType(ty.id)}
               className={`flex flex-col items-center py-2 rounded-xl border-2 text-[10px] font-medium transition ${type === ty.id ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-200 text-gray-600'}`}>

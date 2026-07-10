@@ -104,8 +104,8 @@ export default function LogModal({ operator, cycleId = null, onClose, onSaved })
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4 py-8 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+    <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-[100] px-3 sm:px-4 py-6 sm:py-8 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-8 max-w-md w-full">
         <h3 className="font-bold text-lg mb-1" style={{ color: '#0D6B8A' }}>{t.dashboard.addLog}</h3>
         <p className="text-sm text-gray-400 mb-5">{operator.name}</p>
 
