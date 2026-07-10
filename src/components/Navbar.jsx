@@ -86,8 +86,9 @@ export default function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-4">
-            {/* Brand — two-tone wordmark, mark nudges on hover */}
-            <Link href="/" className="group flex items-center gap-2.5 shrink-0">
+            {/* Brand — two-tone wordmark, mark nudges on hover. Signed-in users
+                land on their dashboard; visitors on the marketing home. */}
+            <Link href={user ? '/dashboard' : '/'} className="group flex items-center gap-2.5 shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark; next/image optimization is unnecessary */}
               <img src="/img/logo-mark.png" alt="" aria-hidden="true"
                 className="w-8 h-8 object-contain transition-transform duration-300 group-hover:scale-105" />
