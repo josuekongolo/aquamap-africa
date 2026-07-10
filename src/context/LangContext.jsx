@@ -16,6 +16,7 @@ const translations = {
       groups: 'Cogestion',
       team: 'Équipe',
       admin: 'Admin',
+      newOperator: 'Nouvel opérateur',
       lang: 'EN',
     },
     home: {
@@ -243,6 +244,7 @@ const translations = {
       groups: 'Co-management',
       team: 'Team',
       admin: 'Admin',
+      newOperator: 'New operator',
       lang: 'FR',
     },
     home: {

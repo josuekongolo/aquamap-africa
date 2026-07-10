@@ -36,9 +36,12 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
         {/* Brand */}
         <div className="lg:col-span-2">
-          <Link href="/" className="inline-flex items-center mb-3">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static brand lockup; next/image optimization is unnecessary */}
-            <img src="/img/logo-full.png" alt="AQAFRIKA" className="h-9 w-auto object-contain" />
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- tiny static brand mark; next/image optimization is unnecessary */}
+            <img src="/img/logo-mark.png" alt="" aria-hidden="true" className="w-8 h-8 object-contain" />
+            <span className="font-display font-semibold text-[17px] tracking-tight text-black">
+              AQA<span style={{ color: 'var(--brand-2)' }}>FRIKA</span>
+            </span>
           </Link>
           <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
             {fr

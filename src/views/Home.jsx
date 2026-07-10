@@ -56,58 +56,59 @@ export default function Home({ counts } = {}) {
 
   return (
     <div className="overflow-x-hidden">
-      {/* ───────────────── HERO — centered, over aquaculture video ─────────── */}
-      <section className="relative isolate text-white" style={{ backgroundColor: 'var(--ink)' }}>
-        {/* Looping video backdrop — African cage aquaculture (Pexels, free license) */}
-        <video
-          autoPlay muted loop playsInline
-          poster="/img/hero-video-poster.jpg"
-          className="absolute inset-0 h-full w-full object-cover opacity-80"
-        >
-          <source src="/video/hero.mp4" type="video/mp4" />
-        </video>
+      {/* ───────────────── HERO — clean, light, centered, compact ───────────── */}
+      <section className="relative isolate overflow-hidden" style={{ backgroundColor: '#f7fafb' }}>
+        {/* Soft brand-tinted glows for depth on the light surface */}
+        <div aria-hidden className="absolute inset-0" style={{
+          background: 'radial-gradient(46% 42% at 50% -8%, rgba(0,168,120,0.12), transparent 70%)',
+        }} />
+        <div aria-hidden className="absolute -right-40 -top-24 h-[28rem] w-[28rem] rounded-full blur-3xl" style={{
+          background: 'radial-gradient(circle, rgba(13,107,138,0.13), transparent 70%)',
+        }} />
+        {/* Faint dot grid, masked toward the centre */}
+        <div aria-hidden className="absolute inset-0 opacity-70" style={{
+          backgroundImage: 'radial-gradient(rgba(6,48,61,0.06) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          maskImage: 'radial-gradient(ellipse 72% 58% at 50% 32%, #000 38%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 72% 58% at 50% 32%, #000 38%, transparent 100%)',
+        }} />
 
-        <div className="relative max-w-3xl mx-auto px-6 flex flex-col items-center justify-center text-center min-h-[88vh] py-24">
-          <h1 className="rise font-display font-medium tracking-[-0.02em] text-balance mb-6"
-            style={{ animationDelay: '60ms', fontSize: 'clamp(2.6rem, 1rem + 6.5vw, 5.25rem)', lineHeight: 1.02 }}>
+        <div className="relative max-w-3xl mx-auto px-6 pt-24 pb-24 sm:pt-28 sm:pb-28 text-center">
+          <h1 className="rise font-display font-semibold tracking-[-0.03em] text-balance mb-6"
+            style={{ color: 'var(--ink)', fontSize: 'clamp(2.5rem, 1rem + 5vw, 4.5rem)', lineHeight: 1.03, animationDelay: '80ms' }}>
             {t.home.hero}
           </h1>
-          <p className="rise text-lg md:text-xl text-white max-w-2xl leading-relaxed mb-10"
-            style={{ animationDelay: '150ms' }}>
+          <p className="rise text-lg text-gray-600 max-w-xl mx-auto leading-relaxed mb-9" style={{ animationDelay: '160ms' }}>
             {t.home.heroSub}
           </p>
-          <div className="rise flex flex-col sm:flex-row gap-3 justify-center mb-12" style={{ animationDelay: '240ms' }}>
+
+          <div className="rise flex flex-col sm:flex-row gap-3 justify-center" style={{ animationDelay: '240ms' }}>
             <Link href="/login"
-              className="group inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl font-semibold text-white shadow-sm transition-all hover:-translate-y-px hover:shadow-md"
+              className="group inline-flex items-center justify-center gap-2 h-11 px-6 rounded-lg font-semibold text-white transition-all hover:-translate-y-px shadow-sm hover:shadow-md"
               style={{ backgroundColor: 'var(--brand)' }}>
               {fr ? 'Espace agent' : 'Agent login'}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link href="/map"
-              className="inline-flex items-center justify-center h-12 px-7 rounded-xl font-semibold text-white border border-white/25 bg-white/[0.06] backdrop-blur-sm transition-colors hover:border-white/40 hover:bg-white/[0.12]">
-              {fr ? 'Explorer les données pays' : 'Explore country data'}
+              className="inline-flex items-center justify-center h-11 px-6 rounded-lg font-semibold bg-white border transition-colors hover:bg-gray-50"
+              style={{ color: 'var(--ink)', borderColor: 'rgba(6,48,61,0.15)' }}>
+              {fr ? 'Explorer la carte' : 'Explore the map'}
             </Link>
-          </div>
-          {/* Inline data index */}
-          <div className="rise flex flex-wrap items-start justify-center divide-x divide-white/15" style={{ animationDelay: '320ms' }}>
-            {stat.map((s, i) => (
-              <div key={i} className="px-5 sm:px-7 text-center">
-                <div className="font-display text-3xl font-semibold leading-none">{s.n.toLocaleString()}</div>
-                <div className="font-mono2 text-[10px] uppercase tracking-wider text-white mt-1.5">{s.l}</div>
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* Sourced-data credibility strip */}
-        <div className="relative border-t border-white/10">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-x-7 gap-y-2">
-            <span className="font-mono2 text-[10px] uppercase tracking-[0.2em] text-white">
+        {/* Sourced-data credibility strip — one scrollable row on mobile (no
+            cramped wrapping), a centered wrap on wider screens. */}
+        <div className="relative border-t border-black/[0.06]">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-center gap-2 sm:gap-x-7">
+            <span className="font-mono2 text-[10px] uppercase tracking-[0.2em] text-gray-400 shrink-0 text-center sm:text-left">
               {fr ? 'Données sourcées' : 'Sourced data'}
             </span>
-            {sourced.map((s) => (
-              <span key={s} className="font-mono2 text-xs text-white">{s}</span>
-            ))}
+            <div className="flex items-center gap-x-5 overflow-x-auto sm:contents [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {sourced.map((s) => (
+                <span key={s} className="font-mono2 text-xs text-gray-500 whitespace-nowrap shrink-0">{s}</span>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -5,7 +5,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import * as WeatherLayers from 'weatherlayers-gl';
-import { scalarTexture, vectorTexture, forecastBounds, SST_PALETTE, WAVE_PALETTE } from '../../lib/weatherTextures';
+import { scalarTexture, vectorTexture, forecastBounds, SST_PALETTE, WAVE_PALETTE, AIRTEMP_PALETTE } from '../../lib/weatherTextures';
 
 const COUNTRY_COLOR = { 'Sénégal': '#0D6B8A', "Côte d'Ivoire": '#00A878', 'Cameroun': '#F4A261' };
 const BRAND = '#0D6B8A';
@@ -69,30 +69,38 @@ function countryEl(flag, color) {
   return el;
 }
 
-// Build the WeatherLayers layer stack from the enabled set + forecast grid.
-// Rasters (heatmaps) sit under the particle fields.
+// Build the WeatherLayers layer stack from one continent-wide grid. Air-temp &
+// wind cover all Africa; ocean fields (sst/currents/waves) are null over land so
+// they wrap the coastline. Rasters (heatmaps) sit under the particle fields, and
+// heatmap opacity is kept low so the basemap + labels + markers read through.
 function buildDeckLayers(fc, set) {
-  if (!fc || !fc.lats || !fc.cells?.length || !set) return [];
+  if (!set || !fc || !fc.lats || !fc.cells?.length) return [];
   const bounds = forecastBounds(fc);
   const layers = [];
 
+  if (set.has('airtemp')) {
+    layers.push(new WeatherLayers.RasterLayer({
+      id: 'wl-airtemp', image: scalarTexture(fc, (c) => c.temp), imageType: WeatherLayers.ImageType.SCALAR,
+      bounds, palette: AIRTEMP_PALETTE, opacity: 0.4, imageInterpolation: WeatherLayers.ImageInterpolation.LINEAR,
+    }));
+  }
   if (set.has('waves')) {
     layers.push(new WeatherLayers.RasterLayer({
       id: 'wl-waves', image: scalarTexture(fc, (c) => c.wave), imageType: WeatherLayers.ImageType.SCALAR,
-      bounds, palette: WAVE_PALETTE, opacity: 0.6, imageInterpolation: WeatherLayers.ImageInterpolation.CUBIC,
+      bounds, palette: WAVE_PALETTE, opacity: 0.5, imageInterpolation: WeatherLayers.ImageInterpolation.LINEAR,
     }));
   }
   if (set.has('sst')) {
     layers.push(new WeatherLayers.RasterLayer({
       id: 'wl-sst', image: scalarTexture(fc, (c) => c.sst), imageType: WeatherLayers.ImageType.SCALAR,
-      bounds, palette: SST_PALETTE, opacity: 0.72, imageInterpolation: WeatherLayers.ImageInterpolation.CUBIC,
+      bounds, palette: SST_PALETTE, opacity: 0.55, imageInterpolation: WeatherLayers.ImageInterpolation.LINEAR,
     }));
   }
   if (set.has('currents')) {
     layers.push(new WeatherLayers.ParticleLayer({
       id: 'wl-currents', image: vectorTexture(fc, (c) => c.curVel, (c) => c.curDir, false),
       imageType: WeatherLayers.ImageType.VECTOR, bounds,
-      numParticles: 1400, maxAge: 40, speedFactor: 40, width: 2.2,
+      numParticles: 1800, maxAge: 40, speedFactor: 40, width: 2.2,
       color: CURRENT_COLOR, opacity: 0.9, animate: true,
     }));
   }
@@ -100,8 +108,8 @@ function buildDeckLayers(fc, set) {
     layers.push(new WeatherLayers.ParticleLayer({
       id: 'wl-wind', image: vectorTexture(fc, (c) => c.windSpd, (c) => c.windDir, true),
       imageType: WeatherLayers.ImageType.VECTOR, bounds,
-      numParticles: 2000, maxAge: 28, speedFactor: 9, width: 1.6,
-      color: WIND_COLOR, opacity: 0.85, animate: true,
+      numParticles: 4000, maxAge: 30, speedFactor: 9, width: 1.5,
+      color: WIND_COLOR, opacity: 0.8, animate: true,
     }));
   }
   return layers;
@@ -114,6 +122,7 @@ function Legend({ layers, fr }) {
     const stops = pal.map(([v, c]) => `rgb(${c[0]},${c[1]},${c[2]}) ${Math.round(((v - min) / (max - min)) * 100)}%`);
     return { css: `linear-gradient(90deg, ${stops.join(', ')})`, min, max };
   };
+  if (layers?.has('airtemp')) items.push({ kind: 'ramp', title: fr ? 'Temp. air (°C)' : 'Air temp (°C)', ...grad(AIRTEMP_PALETTE) });
   if (layers?.has('sst')) items.push({ kind: 'ramp', title: fr ? 'Temp. mer (°C)' : 'Sea temp (°C)', ...grad(SST_PALETTE) });
   if (layers?.has('waves')) items.push({ kind: 'ramp', title: fr ? 'Vagues (m)' : 'Waves (m)', ...grad(WAVE_PALETTE) });
   if (layers?.has('currents')) items.push({ kind: 'flow', title: fr ? 'Courants' : 'Currents', color: CURRENT_COLOR });

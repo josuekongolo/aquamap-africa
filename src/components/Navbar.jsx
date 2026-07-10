@@ -106,7 +106,7 @@ export default function Navbar() {
                   : (onDark ? 'text-white hover:text-white' : 'text-gray-700 hover:text-black');
                 return (
                   <Link key={l.to} href={l.to}
-                    className={`relative px-3 py-2 text-sm font-medium transition-colors duration-200 ${color}`}>
+                    className={`relative whitespace-nowrap px-2.5 lg:px-3 py-2 text-sm font-medium transition-colors duration-200 ${color}`}>
                     {l.label}
                     <span
                       className={`pointer-events-none absolute left-3 right-3 -bottom-px h-0.5 rounded-full origin-left transition-transform duration-300 ease-out ${active ? 'scale-x-100' : 'scale-x-0'}`}
@@ -135,9 +135,9 @@ export default function Navbar() {
               {user ? (
                 <div className="hidden md:flex items-center gap-2">
                   <Link href="/register"
-                    className="inline-flex items-center gap-1.5 text-white text-sm font-semibold pl-3 pr-4 py-2 rounded-full shadow-sm transition-all hover:-translate-y-px hover:shadow-md"
+                    className="inline-flex items-center gap-1.5 whitespace-nowrap text-white text-sm font-semibold pl-3 pr-4 py-2 rounded-full shadow-sm transition-all hover:-translate-y-px hover:shadow-md"
                     style={{ backgroundColor: 'var(--brand)' }}>
-                    <Plus className="w-4 h-4" /> {t.register.title}
+                    <Plus className="w-4 h-4 shrink-0" /> {t.nav.newOperator}
                   </Link>
                   <Link href="/settings" title={lang === 'fr' ? 'Paramètres' : 'Settings'}
                     className={`p-2 rounded-full transition-colors ${onDark ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-black/[0.04]'}`}>

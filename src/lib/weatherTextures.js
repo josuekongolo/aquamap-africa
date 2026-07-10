@@ -42,8 +42,9 @@ export function vectorTexture(fc, velAcc, dirAcc, fromDirection = false) {
     for (let c = 0; c < width; c++) {
       const cell = fc.cells[latIdx * width + c];
       const o = (r * width + c) * 2;
-      if (!cell) { data[o] = NaN; data[o + 1] = NaN; continue; }
-      const spd = Number(velAcc(cell)) || 0;
+      const rawSpd = cell ? velAcc(cell) : null;
+      if (rawSpd == null || Number.isNaN(rawSpd)) { data[o] = NaN; data[o + 1] = NaN; continue; }
+      const spd = Number(rawSpd) || 0;
       const rad = ((Number(dirAcc(cell)) || 0) * Math.PI) / 180;
       let u = spd * Math.sin(rad);   // eastward
       let v = spd * Math.cos(rad);   // northward
@@ -75,4 +76,14 @@ export const WAVE_PALETTE = [
   [2, [123, 204, 196]],
   [3, [67, 162, 202]],
   [4, [8, 104, 172]],
+];
+
+// Air temperature 10–46 °C — diverging cool↔hot, neutral ~25 °C (RdBu reversed).
+export const AIRTEMP_PALETTE = [
+  [10, [8, 48, 107]],
+  [18, [66, 146, 198]],
+  [24, [247, 247, 247]],
+  [30, [252, 141, 89]],
+  [38, [215, 48, 39]],
+  [46, [103, 0, 31]],
 ];

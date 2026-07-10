@@ -19,7 +19,7 @@ export const metadata = {
   },
   description: 'La plateforme gratuite pour les aquaculteurs africains — enregistrement des opérateurs, suivi de production (FCR), cogestion FAO et intelligence sectorielle.',
   manifest: '/manifest.webmanifest',
-  icons: { icon: '/favicon.svg', apple: '/img/logo-mark.png' },
+  icons: { icon: '/favicon-32.png', apple: '/img/logo-mark.png' },
   openGraph: {
     type: 'website',
     siteName: 'AQAFRIKA',

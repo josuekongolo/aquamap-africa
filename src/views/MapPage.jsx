@@ -14,7 +14,7 @@ import WeatherAdvisory from '../components/WeatherAdvisory';
 import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { getMarineForecast } from '../lib/marine';
+import { getContinentForecast } from '../lib/marine';
 import { useRealtimeTable } from '../lib/useRealtimeTable';
 
 const SITE_PAGE = 50;
@@ -46,7 +46,7 @@ export default function MapPage({ liveProduction = {} }) {
   const [rightOpen, setRightOpen] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false); // desktop collapse
   const [rightCollapsed, setRightCollapsed] = useState(false); // desktop collapse
-  const [forecast, setForecast] = useState([]);
+  const [forecast, setForecast] = useState(null);
 
   // Site search + filters + pagination
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -93,14 +93,15 @@ export default function MapPage({ liveProduction = {} }) {
     return () => { active = false; };
   }, []);
 
-  // Marine/weather casts (Open-Meteo) — fetched once when any cast layer is enabled.
-  const wantForecast = ['waves', 'sst', 'currents', 'wind'].some((k) => layers.has(k));
+  // One continent-wide cast (wind + air temp everywhere, ocean fields on coasts),
+  // fetched once when any marine/weather layer is enabled.
+  const wantForecast = ['airtemp', 'wind', 'sst', 'currents', 'waves'].some((k) => layers.has(k));
   useEffect(() => {
-    if (!wantForecast || forecast.length) return;
+    if (!wantForecast || (forecast && forecast.cells)) return;
     let active = true;
-    getMarineForecast().then((pts) => { if (active) setForecast(pts); });
+    getContinentForecast().then((fc) => { if (active) setForecast(fc); });
     return () => { active = false; };
-  }, [wantForecast, forecast.length]);
+  }, [wantForecast, forecast]);
 
   const onSelect = useCallback((f) => { setSelected(f); setRightOpen(true); }, []);
   const onBounds = useCallback((b) => setBounds(b), []);
@@ -162,11 +163,13 @@ export default function MapPage({ liveProduction = {} }) {
     { id: 'countries', label: fr ? 'Données par pays' : 'Country data', color: '#00A878', count: countries.length },
   ];
 
+  // Continent-wide fields first (cover all Africa), then coastal ocean fields.
   const FORECAST_DEFS = [
-    { id: 'waves', label: fr ? 'Vagues' : 'Waves', color: '#41b6c4' },
-    { id: 'sst', label: fr ? 'Température mer' : 'Sea temp', color: '#fc8d59' },
-    { id: 'currents', label: fr ? 'Courants' : 'Currents', color: '#0D6B8A' },
+    { id: 'airtemp', label: fr ? 'Température air' : 'Air temp', color: '#ef4444' },
     { id: 'wind', label: fr ? 'Vent' : 'Wind', color: '#475569' },
+    { id: 'sst', label: fr ? 'Temp. mer (côte)' : 'Sea temp (coast)', color: '#fc8d59' },
+    { id: 'currents', label: fr ? 'Courants (côte)' : 'Currents (coast)', color: '#0D6B8A' },
+    { id: 'waves', label: fr ? 'Vagues (côte)' : 'Waves (coast)', color: '#41b6c4' },
   ];
 
   return (
@@ -195,7 +198,7 @@ export default function MapPage({ liveProduction = {} }) {
           {/* Marine / weather casts (Open-Meteo) */}
           <div className="mt-3 pt-3 border-t">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 px-3 mb-1">
-              {fr ? 'Prévisions marines' : 'Marine forecast'}
+              {fr ? 'Météo & océan' : 'Weather & ocean'}
             </p>
             {FORECAST_DEFS.map(l => (
               <label key={l.id} className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer">
@@ -206,9 +209,14 @@ export default function MapPage({ liveProduction = {} }) {
                 <Switch on={layers.has(l.id)} onClick={() => toggleLayer(l.id)} />
               </label>
             ))}
-            {wantForecast && forecast.length === 0 && (
+            {wantForecast && (!forecast || !forecast.cells) && (
               <p className="text-[11px] text-gray-400 px-3 pt-1">{fr ? 'Chargement…' : 'Loading…'}</p>
             )}
+            <p className="text-[11px] text-gray-400 px-3 pt-1 leading-snug">
+              {fr
+                ? 'Température air & vent couvrent tout le continent ; mer, courants & vagues sont côtiers (Atlantique).'
+                : 'Air temp & wind cover the whole continent; sea temp, currents & waves are coastal (Atlantic).'}
+            </p>
           </div>
 
           {/* Background maps */}
