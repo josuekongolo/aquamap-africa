@@ -41,10 +41,16 @@ export default function Login() {
           fullName: form.fullName, organization: form.organization,
         });
         if (error) { setError(error.message); return; }
-        // Email confirmation on → no session yet; ask them to confirm. If a
-        // session comes back (confirmation off), go straight to the dashboard.
-        if (data?.session) router.replace(redirectTo);
-        else { setInfo(t.auth.checkEmail); setMode('signin'); }
+        if (data?.session) { router.replace(redirectTo); return; }
+        // No session. Supabase obfuscates an already-registered email by
+        // returning a user with an EMPTY identities array and sending nothing —
+        // detect that and steer them to sign in instead of a phantom "check
+        // your email". A genuinely new signup has one identity (pending confirm).
+        if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setError(t.auth.emailInUse); setMode('signin');
+        } else {
+          setInfo(t.auth.checkEmail); setMode('signin');
+        }
       } else {
         const { error } = await signIn(form.email, form.password);
         if (error) { setError(error.message); return; }
