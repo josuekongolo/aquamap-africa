@@ -508,10 +508,10 @@ export default function OperatorForm({ initialOperator = null, onSaved }) {
                   onChange={e => setField('revenue', e.target.value)}
                 >
                   <option value="">Sélectionner...</option>
-                  <option>{'< 500 000 FCFA'}</option>
-                  <option>500 000 - 2M FCFA</option>
-                  <option>2M - 10M FCFA</option>
-                  <option>{'> 10M FCFA'}</option>
+                  <option value="< 500 000 FCFA">{'< 500 000 FCFA  (≈ < $830)'}</option>
+                  <option value="500 000 - 2M FCFA">500 000 - 2M FCFA  (≈ $830 – $3,300)</option>
+                  <option value="2M - 10M FCFA">2M - 10M FCFA  (≈ $3,300 – $16,700)</option>
+                  <option value="> 10M FCFA">{'> 10M FCFA  (≈ > $16,700)'}</option>
                 </select>
               </div>
               <div>
