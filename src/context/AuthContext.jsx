@@ -45,6 +45,19 @@ export function AuthProvider({ children }) {
   const signIn = (email, password) =>
     supabase.auth.signInWithPassword({ email, password });
 
+  // Public self-serve signup. With no matching invite, the handle_new_user()
+  // trigger creates a fresh organization and makes this user its coordinator
+  // (a private workspace). full_name/organization ride along as user metadata.
+  const signUp = (email, password, { fullName = '', organization = '' } = {}) =>
+    supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName, organization },
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
   // Clear any queued offline writes on sign-out — they carry farmer PII and
   // belong to the agent who was signed in on this device.
   const signOut = async () => {
@@ -76,6 +89,7 @@ export function AuthProvider({ children }) {
     loading,
     configured: isSupabaseConfigured,
     signIn,
+    signUp,
     signOut,
     resetPassword,
     updatePassword,

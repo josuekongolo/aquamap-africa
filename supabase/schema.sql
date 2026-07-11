@@ -1027,3 +1027,74 @@ as $$
                           ) c)
   ) end;
 $$;
+
+-- ============================================================================
+-- 13. SELF-SERVE SIGNUP → a private workspace (organization) per agent.
+--     Makes public signup safe and fully hands-off: a user who signs up
+--     WITHOUT an invite gets a fresh organization and becomes its COORDINATOR
+--     (a private, isolated workspace). Invited users still join the inviter's
+--     org with the invited role (unchanged). Idempotent; safe to re-run.
+-- ============================================================================
+
+-- 13a. Tighten organizations with RLS: members read only their own org (the
+--      security-definer signup trigger still inserts regardless of RLS). This
+--      stops the multi-tenant org list from leaking now that we mint one org
+--      per signup. Coordinators may rename their own org (future settings UI);
+--      no client insert/delete — orgs are born only via the trigger in 13b.
+alter table public.organizations enable row level security;
+drop policy if exists organizations_read on public.organizations;
+create policy organizations_read on public.organizations
+  for select using (id = public.current_org() or public.is_admin());
+drop policy if exists organizations_update on public.organizations;
+create policy organizations_update on public.organizations
+  for update using (id = public.current_org() and public.is_coordinator())
+  with check (id = public.current_org() and public.is_coordinator());
+
+-- 13b. handle_new_user: invite → join inviter's org; no invite → spin up a
+--      private workspace and make the signer its coordinator.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  inv       public.invites;
+  v_org     uuid;
+  v_role    text;
+  v_orgname text;
+begin
+  select * into inv from public.invites
+    where lower(email) = lower(new.email) and accepted_at is null and expires_at > now()
+    order by created_at desc limit 1;
+
+  if inv.id is not null then
+    v_org  := inv.org_id;
+    v_role := coalesce(inv.role, 'agent');
+  else
+    -- Name the workspace from the org field, else the person's name, else generic.
+    v_orgname := nullif(btrim(coalesce(new.raw_user_meta_data ->> 'organization', '')), '');
+    if v_orgname is null then
+      v_orgname := nullif(btrim(coalesce(new.raw_user_meta_data ->> 'full_name', '')), '');
+      if v_orgname is not null then v_orgname := v_orgname || ' — workspace'; end if;
+    end if;
+    v_orgname := coalesce(v_orgname, 'AQAFRIKA workspace');
+    insert into public.organizations (name) values (v_orgname) returning id into v_org;
+    v_role := 'coordinator';
+  end if;
+
+  insert into public.agents (id, full_name, organization, org_id, role)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    coalesce(new.raw_user_meta_data ->> 'organization', ''),
+    v_org,
+    v_role
+  )
+  on conflict (id) do nothing;
+
+  if inv.id is not null then
+    update public.invites set accepted_at = now() where id = inv.id;
+  end if;
+  return new;
+end;
+$$;
